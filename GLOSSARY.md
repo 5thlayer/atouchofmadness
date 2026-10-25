@@ -36,6 +36,37 @@ _Avoid_: aura, tick drain
 A drain that takes a fixed amount of Sanity at once, such as being struck by the Dark or eating a food with a negative Sanity Modifier.
 _Avoid_: event drain, lump
 
+**Restore**:
+Anything that raises Sanity; like a drain, it is either continuous or instantaneous.
+_Avoid_: heal, regen, comfort (the feel, not the mechanic)
+
+**Fresh disc**:
+A music disc that is not one of the last two discs a player heard, so a jukebox playing it restores fully.
+
+**Stale disc**:
+A music disc that is one of the last two discs a player heard; each play of it restores half what the last one did, until two other discs have played between.
+_Avoid_: repeat, cooldown
+
+**Flower Crown**:
+This Pillar's headgear, made from flowers, that restores Sanity while worn and wilts with time.
+
+### Stages
+
+**Sane**:
+The stage of a player whose Sanity is high enough that it does nothing to them.
+
+**Uneasy**:
+The stage below Sane, where Hallucinations start and Shadow Creatures appear but cannot harm.
+_Avoid_: low sanity (say which stage)
+
+**Insane**:
+The lowest stage, where Shadow Creatures are real.
+_Avoid_: Insanity as the name of the meter, mad (the feel, not the stage)
+
+**Hallucination**:
+A harmless effect of low Sanity that only the player sees or hears, such as a fake sound or a fading screen edge.
+_Avoid_: Shadow Creature (a hallucination is never a mob)
+
 ### Dev runs
 
 **Game-test pack**:
