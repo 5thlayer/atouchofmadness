@@ -70,7 +70,7 @@ _Avoid_: Shadow Creature (a hallucination is never a mob)
 ### Shadow Creatures
 
 **Owner**:
-The one player a Shadow Creature exists for; no other player is sent it.
+The one player a Shadow Creature exists for and hunts; besides the Owner, only a player who is Insane can see it.
 
 **Unreal**:
 The state of a Shadow Creature whose Owner is Uneasy: it can neither harm nor be harmed, and fades when approached or struck.
