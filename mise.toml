@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: 2026 5thlayer
-# SPDX-License-Identifier: MIT
+# SPDX-License-Identifier: LGPL-3.0-only
 #
 # The JDK that runs Gradle here, matching the toolchain build.gradle asks for.
 

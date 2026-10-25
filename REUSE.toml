@@ -1,8 +1,11 @@
 version = 1
 
-# Java files carry their own SPDX headers. This file marks everything that
-# can't hold one.
+# Code is LGPL-3.0-only, the mod's own content and prose are CC BY 4.0, and whatever is not the
+# suite's own keeps the licence it came with (A Touch Of ADR-0001). Java files carry their own SPDX
+# headers; this file marks everything that can't hold one. The last annotation matching a file
+# wins, so the general rules come first and the exceptions after them.
 
+# Code, and the files a program reads as instructions.
 [[annotations]]
 path = [
     "**/*.gradle",
@@ -11,25 +14,35 @@ path = [
     ".gitattributes",
     ".claude/settings.json",
     ".claude/hooks/*.sh",
-    ".gitmodules",
     "**/*.mods.toml",
-    "scripts/*.py",
-    "scripts/*.sh",
-    "plugin/src/main/resources/**/scripts/*",
+    "**/src/main/resources/**/*.mcfunction",
+    "**/src/gametest/resources/**/*.mcfunction",
+    ".github/**",
+]
+SPDX-FileCopyrightText = "2026 5thlayer"
+SPDX-License-Identifier = "LGPL-3.0-only"
+
+# The mod's own content and prose: docs, the glossary, the ADRs, and the datapack and resources.
+[[annotations]]
+path = [
     "**/*.md",
     "**/src/main/resources/**/*.json",
     "**/src/gametest/resources/**/*.json",
     "**/src/main/resources/**/*.mcmeta",
-    "**/src/main/resources/**/*.mcfunction",
     "**/src/gametest/resources/**/*.mcmeta",
-    "**/src/gametest/resources/**/*.mcfunction",
-    "**/src/gametest/resources/**/*.nbt",
     "**/src/main/resources/**/*.nbt",
+    "**/src/gametest/resources/**/*.nbt",
     "LICENSE",
     "NOTICE",
-    ".github/**",
 ]
 SPDX-FileCopyrightText = "2026 5thlayer"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+# The agent skills, from mattpocock/skills.
+[[annotations]]
+path = [".claude/skills/**", ".gitmodules"]
+precedence = "override"
+SPDX-FileCopyrightText = "Matt Pocock"
 SPDX-License-Identifier = "MIT"
 
 # Third-party art, such as Malcolm Riley's unused textures
@@ -42,14 +55,14 @@ SPDX-License-Identifier = "MIT"
 # [[annotations]]
 # path = [
 #     "data/art/*.png",
-#     "src/main/resources/assets/examplelib/textures/block/plating/*.png",
+#     "src/main/resources/assets/atouchofmadness/textures/block/plating/*.png",
 # ]
 # precedence = "override"
 # SPDX-FileCopyrightText = "Malcolm Riley"
 # SPDX-License-Identifier = "CC-BY-4.0"
 #
 # [[annotations]]
-# path = ["src/main/resources/assets/examplelib/textures/block/machine/front.png"]
+# path = ["src/main/resources/assets/atouchofmadness/textures/block/machine/front.png"]
 # precedence = "override"
 # SPDX-FileCopyrightText = ["Malcolm Riley", "2026 5thlayer"]
 # SPDX-License-Identifier = "CC-BY-4.0"

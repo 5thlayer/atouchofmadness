@@ -13,7 +13,7 @@ Most answers are in the repo. Keep them the same on both sites and in the repo: 
 | Name | `mod_name` in `gradle.properties`, and nothing else: no version, no "mod", no game name |
 | Summary | `mod_description` in `gradle.properties`: one sentence on what the Module does |
 | Description | `README.md`'s opening section for players, which the maintainer writes and no agent does: what the Module is, why it exists and how it feels to play. Modrinth, CurseForge and the README say the same thing |
-| Licence | MIT (`LICENSE`), SPDX id `MIT`; a Module that carries other licences (Beltworks' CC-BY-4.0 assets) names them in the description |
+| Licence | LGPL-3.0-only for the code and CC BY 4.0 for the content (`LICENSE`, A Touch Of ADR-0001); pick LGPL-3.0-only and name CC BY 4.0 in the description |
 | Source and issues links | `https://github.com/5thlayer/<repo>` and its `/issues` |
 | Loader, game version | NeoForge and `minecraft_version`; each upload sets them per version |
 | Environment | Client and Server, as the `upload` task sends |
@@ -31,7 +31,7 @@ Create a project from the Modrinth website. The API's create-project call lists 
 - **Summary** (`description` in the API): "no more than a sentence or two", without formatting and without repeating the title ([§5.3](https://modrinth.com/legal/rules)).
 - **Description** (`body`): Markdown. It must make "a clear and honest attempt to describe" the project: what it does, why download it, and anything to know first ([§2](https://modrinth.com/legal/rules)). It needs an English version.
 - **Categories** and **additional categories**: the project's tags.
-- **Licence**: an SPDX id (`MIT`), with an optional licence URL.
+- **Licence**: an SPDX id (`LGPL-3.0-only`), with an optional licence URL.
 - **Links**: issues, source, wiki, Discord and donation URLs, all optional. Every link must lead to a public, relevant page ([§5.4](https://modrinth.com/legal/rules)).
 - **Icon**: PNG, JPG, BMP, GIF, WebP or SVG.
 - **Gallery**: optional images, relevant and not misleading ([§5.5](https://modrinth.com/legal/rules)).
@@ -50,7 +50,7 @@ Create the project at [authors.curseforge.com](https://authors.curseforge.com/#/
 - **Name**: required and unique; a taken name is rejected. No version numbers, no category word ("mod"), nothing excessively long. English only.
 - **Summary**: required; "a one line explanation" of what the project does, not who made it.
 - **Description**: required; what the mod does or adds, in enough detail. It may hold images, credits and install notes; donation and partner links stay few and at the bottom.
-- **Project licence**: required; pick MIT from the dropdown, or Custom.
+- **Project licence**: required; pick LGPL-3.0 from the dropdown.
 - **Class**: required; Mods.
 - **Main category**: required; **additional categories**: up to 4.
 - **Logo**: required; a PNG, at least 400×400 and square, the Module's own art, not a solid colour or the game's logo. The moderation policies advise against WebP ([Moderation policies](https://support.curseforge.com/en/support/solutions/articles/9000197279-project-submission-guidelines)).

@@ -1,4 +1,4 @@
-# Example Module
+# A Touch of Madness
 
 One paragraph: the mechanic this Module gives, and which Consumers use it.
 
@@ -8,7 +8,7 @@ The Module's terms, each with what it is and the words to avoid. `/domain-modeli
 
 ### Parties
 
-**Example Module**:
+**A Touch of Madness**:
 This Module.
 _Avoid_: Library, Binding
 
