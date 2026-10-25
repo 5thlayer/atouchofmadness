@@ -36,6 +36,10 @@ _Avoid_: aura, tick drain
 A drain that takes a fixed amount of Sanity at once, such as being struck by the Dark or eating a food with a negative Sanity Modifier.
 _Avoid_: event drain, lump
 
+**Low light**:
+Light at a player's eyes too dim for their peace of mind, a brighter line than the Dark's; a night with a full moon under open sky never counts (ADR 0003).
+_Avoid_: the Dark (A Touch of Darkness's state), darkness
+
 **Restore**:
 Anything that raises Sanity; like a drain, it is either continuous or instantaneous.
 _Avoid_: heal, regen, comfort (the feel, not the mechanic)
@@ -49,6 +53,10 @@ _Avoid_: repeat, cooldown
 
 **Flower Crown**:
 This Pillar's headgear, made from flowers, that restores Sanity while worn and wilts with time.
+
+**Umbra Gear**:
+This Pillar's sword, pickaxe and armour made from Umbra, each the best in its role and each draining Sanity while held or worn.
+_Avoid_: shadow gear, Umbra tools (it includes armour)
 
 ### Stages
 
