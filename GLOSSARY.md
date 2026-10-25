@@ -67,6 +67,28 @@ _Avoid_: Insanity as the name of the meter, mad (the feel, not the stage)
 A harmless effect of low Sanity that only the player sees or hears, such as a fake sound or a fading screen edge.
 _Avoid_: Shadow Creature (a hallucination is never a mob)
 
+### Shadow Creatures
+
+**Owner**:
+The one player a Shadow Creature exists for; no other player is sent it.
+
+**Unreal**:
+The state of a Shadow Creature whose Owner is Uneasy: it can neither harm nor be harmed, and fades when approached or struck.
+_Avoid_: Hallucination (never a mob), fake, ghost
+
+**Real**:
+The state of a Shadow Creature whose Owner is Insane: it attacks, can be killed, and leaves Umbra.
+
+**Lurker**:
+The Shadow Creature of every low stage: slow, tough and on the ground.
+
+**Gaunt**:
+The Shadow Creature that comes only when Sanity is nearly gone: fast, fragile, hard-hitting and flying.
+
+**Shape**:
+The mob a Shadow Creature is drawn as, taken from the monsters of the biome it appears in; a Shape changes the look, never the Lurker's or the Gaunt's behaviour.
+_Avoid_: skin, disguise, variant
+
 ### Dev runs
 
 **Game-test pack**:
