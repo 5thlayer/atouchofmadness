@@ -1,37 +1,53 @@
 # A Touch of Madness
 
-One paragraph: the mechanic this Module gives, and which Consumers use it.
+The Pillar of A Touch Of that owns Sanity: a per-player meter that the world wears down and comfort restores, with Shadow Creatures for those who let it fall. The terms the Pillars share, Sanity, Shadow Creature, Umbra and Sanity Modifier among them, are in the suite glossary (`5thlayer/atouchof`'s `GLOSSARY.md`); this file holds the terms only this Pillar uses.
 
 ## Language
-
-The Module's terms, each with what it is and the words to avoid. `/domain-modeling` adds them as they are resolved.
 
 ### Parties
 
 **A Touch of Madness**:
-This Module.
-_Avoid_: Library, Binding
+This Pillar, `atouchofmadness`.
+_Avoid_: Madness mod, Module
 
-**FactoryWorks**:
-The suite of 5thlayer mods this Module belongs to, with the other Modules.
-_Avoid_: the -works suite, the Pack
+**A Touch Of**:
+The suite this Pillar belongs to, with A Touch of Darkness and A Touch of Cold, all drawn by one Runtime.
+_Avoid_: FactoryWorks (a different suite), the pack
 
-**Consumer**:
-A mod that builds against this Module, such as another FactoryWorks Module, or a modpack that loads it.
-_Avoid_: client (collides with the game's client side), dependent, integration
+**Pillar**:
+One of the suite's mods, each owning one danger and playable alone in vanilla.
+_Avoid_: Module (a FactoryWorks mod), Consumer, addon
+
+**Runtime**:
+The small mod every Pillar nests jar-in-jar, which draws this Pillar's Sanity meter and carries the suite's neutral signals, and holds no mechanic.
+_Avoid_: Core, base mod, library
+
+### Sanity
+
+**Drain**:
+Anything that lowers Sanity; it is either continuous or instantaneous.
+_Avoid_: event, sanity loss, penalty
+
+**Continuous drain**:
+A drain that takes Sanity at a rate for as long as its condition holds, such as low light or a hostile nearby.
+_Avoid_: aura, tick drain
+
+**Instantaneous drain**:
+A drain that takes a fixed amount of Sanity at once, such as being struck by the Dark or eating a food with a negative Sanity Modifier.
+_Avoid_: event drain, lump
 
 ### Dev runs
 
 **Game-test pack**:
-A datapack only this Module's game tests switch on, holding the data a Consumer would supply, such as a tag's entries or a recipe, so a test can stand on it. Never in what players download.
+A datapack only this Pillar's game tests switch on, holding the data a pack would supply, such as a tag's entries or a recipe, so a test can stand on it. Never in what players download.
 _Avoid_: test datapack, gametest datapack
 
 **Dev pack**:
-A datapack only this Module's dev client switches on, holding the data a Consumer would supply, so a feature a Consumer turns on with data can be tried by hand. Never in what players download.
+A datapack only this Pillar's dev client switches on, holding the data a pack would supply, so a feature a pack turns on with data can be tried by hand. Never in what players download.
 _Avoid_: debug pack, test pack
 
 ### Shipped packs
 
 **Gallery pack**:
-A datapack in this Module's jar, off until a player turns it on, whose functions build a working scene of each of the Module's features, each with a sign naming it. Functions only: turning it on changes nothing about how the Module plays (libworks ADR 0010).
+A datapack in this Pillar's jar, off until a player turns it on, whose functions build a working scene of each of the Pillar's features, each with a sign naming it. Functions only: turning it on changes nothing about how the Pillar plays (libworks ADR 0010).
 _Avoid_: demo pack, showcase pack, gallery datapack

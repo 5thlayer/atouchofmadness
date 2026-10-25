@@ -1,12 +1,12 @@
 # A Touch of Madness
 
-A 5thlayer Module: a mod its Consumers, other Modules or a pack, read from the local maven repository by version. See `GLOSSARY.md` for the domain glossary.
+The second Pillar of A Touch Of (`5thlayer/atouchof`, the suite's home): a mod that owns one survival danger, Sanity, and plays alone in vanilla. See `GLOSSARY.md` for this Pillar's glossary, and the suite's `GLOSSARY.md` for the terms the Pillars share.
 
 ## Workflow
 
 Commit on the current branch; open a feature branch only when the user asks for one. Nothing is pushed without the user's word. Asking a session to steward a PR is the user's word for that PR's pushes, its rebases onto `main`, and its merge, under the `steward` skill.
 
-Anything that changes the Module's behaviour gets a `/code-review`: the project skill in `.claude/skills/code-review`, from mattpocock/skills, never the built-in review of the same name. Doc and plumbing changes skip it: that covers `CLAUDE.md`, `GLOSSARY.md`, ADRs, `docs/`, `.claude/`, submodule bumps, and tooling or CI config.
+Anything that changes the Pillar's behaviour gets a `/code-review`: the project skill in `.claude/skills/code-review`, from mattpocock/skills, never the built-in review of the same name. Doc and plumbing changes skip it: that covers `CLAUDE.md`, `GLOSSARY.md`, ADRs, `docs/`, `.claude/`, submodule bumps, and tooling or CI config.
 
 ## Commits
 
@@ -23,11 +23,11 @@ Conventional commits: `<type>(<optional scope>): <summary>`, with the summary in
 
 ### Game-test code
 
-- Everything that exists only for the Module's own runs lives in the `gametest` source set, which never ships (libworks ADRs 0004 and 0011): its game-test code, its test-only resources and its packs.
+- Everything that exists only for the Pillar's own runs lives in the `gametest` source set, which never ships (libworks ADRs 0004 and 0011): its game-test code, its test-only resources and its packs.
 - `ATouchOfMadnessGameTests` hooks itself in from `FMLConstructModEvent`, and `src/main` never names game-test code.
 - Where shipped code must report to a test, `main` holds a hook with no test vocabulary that the game-test side fills.
 - A new game test class is registered by a line in `ATouchOfMadnessGameTests.registerTests`, and its tests stand on the `gametest/platform` structure that the plugin's `buildGametestStructures` task writes into `src/gametest/resources`.
-- `DevPacks` switches on `gametest_pack/` in the game tests and `dev_pack/` in the dev client, the datapacks that stand in for what a Consumer fills.
+- `DevPacks` switches on `gametest_pack/` in the game tests and `dev_pack/` in the dev client, the datapacks that stand in for what a pack would fill.
 - Packs a test switches on itself, such as one per batch, go under `gametest_packs/<name>/`.
 
 ### The dev client
@@ -43,9 +43,9 @@ Conventional commits: `<type>(<optional scope>): <summary>`, with the summary in
 
 ## Releases
 
-A change a Consumer can use or will notice adds its line under `## Unreleased` in `CHANGELOG.md` as it lands. Before bumping `mod_version`, publishing to `~/.m2`, tagging a release or uploading to Modrinth or CurseForge, read `docs/agents/releases.md`: releases go through `sh ./gradlew release`, which uploads last with the `upload` task when `gradle.properties` names a project, and a published version never changes, in `~/.m2` or on either site. ADR 0001, inherited from 5thlayer/libworks, sets the version bumps.
+A change a player or a pack author can use or will notice adds its line under `## Unreleased` in `CHANGELOG.md` as it lands. Before bumping `mod_version`, publishing to `~/.m2`, tagging a release or uploading to Modrinth or CurseForge, read `docs/agents/releases.md`: releases go through `sh ./gradlew release`, which uploads last with the `upload` task when `gradle.properties` names a project, and a published version never changes, in `~/.m2` or on either site. ADR 0001, inherited from 5thlayer/libworks, sets the version bumps.
 
-A release that must reach a Consumer in another checkout, a Module or a pack that pins the jar, follows the `release-train` skill: one owning session per checkout, and pushes only on the user's word.
+A release that must reach another checkout, such as a pack that pins the jar, follows the `release-train` skill: one owning session per checkout, and pushes only on the user's word.
 
 ## Agent skills
 
