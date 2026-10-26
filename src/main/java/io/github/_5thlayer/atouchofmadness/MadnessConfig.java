@@ -176,10 +176,6 @@ public final class MadnessConfig {
             .comment("The Sanity each hit from a Real creature takes at once.")
             .defineInRange("strike", ShadowRules.DEFAULT.strike(), 0, Sanity.MAX);
 
-    private static final ModConfigSpec.DoubleValue UMBRA = BUILDER
-            .comment("The drain in Sanity a minute while a player carries any Umbra, however much.")
-            .defineInRange("umbra", ShadowRules.DEFAULT.umbra(), 0, Sanity.MAX);
-
     private static final Stats LURKER = Stats.define("lurker", "The Lurker's stats; a change applies to Lurkers that come after it.",
             ShadowRules.DEFAULT.lurker());
 
@@ -274,7 +270,7 @@ public final class MadnessConfig {
         double minDistance = MIN_DISTANCE.get();
         return new ShadowRules(CAPS.get().stream().map(Number::doubleValue).toList(), INTERVAL.get() * 20, minDistance,
                 Math.max(MAX_DISTANCE.get(), minDistance), FADE_DISTANCE.get(), GAUNT_BELOW.get(), GAUNT_CHANCE.get(), REAL_FACTOR.get(),
-                STRIKE.get(), UMBRA.get(), LURKER.get(), GAUNT.get());
+                STRIKE.get(), LURKER.get(), GAUNT.get());
     }
 
     /** On until the config loads. */

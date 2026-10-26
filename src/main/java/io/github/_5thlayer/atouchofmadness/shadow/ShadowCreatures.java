@@ -12,7 +12,6 @@ import java.util.UUID;
 
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
-import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.nearby.NearbySources;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
@@ -41,8 +40,8 @@ import net.neoforged.neoforge.registries.DeferredRegister;
  * The Shadow Creatures, the Lurker and the Gaunt, and Umbra, which they leave when killed Real (ADR
  * 0002). Each player's own creatures nearby drain them as their own source, {@code shadow_creature}:
  * each in {@code #atouchofmadness:unsettling} by its {@code atouchofmadness:unsettling_weight}, twice
- * that while Real, at the hostile rate within the hostile radius and under its cap. Carrying any raw
- * Umbra drains a flat rate, however much, as {@code umbra}. {@link ShadowSpawner} brings them.
+ * that while Real, at the hostile rate within the hostile radius and under its cap.
+ * {@link ShadowSpawner} brings them.
  */
 public final class ShadowCreatures {
 
@@ -77,7 +76,6 @@ public final class ShadowCreatures {
         modBus.addListener(ModConfigEvent.Loading.class, ShadowCreatures::configChanged);
         modBus.addListener(ModConfigEvent.Reloading.class, ShadowCreatures::configChanged);
         PlayerSanity.addSource(player -> Rate.of(nearby(player), Cause.SHADOW_CREATURE));
-        PlayerSanity.addSource(player -> Rate.of(carried(player), Cause.UMBRA));
         PlayerSanity.onStageChange(ShadowCreatures::retrack);
         ShadowSpawner.register();
     }
@@ -129,10 +127,6 @@ public final class ShadowCreatures {
         var current = rules;
         return NearbySources.unsettlingDrain(player, entity -> entity instanceof ShadowCreature creature && creature.isOwnedBy(player),
                 (entity, weight) -> current.weightOf(weight, ((ShadowCreature) entity).isReal()));
-    }
-
-    private static double carried(ServerPlayer player) {
-        return player.getInventory().contains(stack -> stack.is(UMBRA)) ? EnvironmentRules.drainPerTick(rules.umbra()) : 0;
     }
 
     private static void attributes(EntityAttributeCreationEvent event) {

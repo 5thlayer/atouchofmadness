@@ -57,7 +57,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
  * to a player's kill, still on Peaceful. It goes with its Owner's logout, death, change of dimension
  * and sleep, and when their cap drops, never stops them sleeping, and is never saved. Its Owner's
  * own nearby drain 2/min for a Lurker and 4 for a Gaunt, twice that while Real; a Real one's hit
- * takes 5; carrying Umbra drains 1/min. Each shared rule is one body run for the Lurker and the Gaunt in turn, as two tests.
+ * takes 5; carrying Umbra drains nothing. Each shared rule is one body run for the Lurker and the
+ * Gaunt in turn, as two tests.
  *
  * <p>The game-test server turns {@code doMobSpawning} off, so no attempt comes but those a test makes
  * through {@link ShadowSpawner#attempt}. Each test joins players of its own and logs them out however
@@ -126,8 +127,7 @@ final class ShadowTests {
         tests.test("discovery_an_own_shadow_creature_nearby_discovers_it", EVALUATED + 1, ShadowTests::discoverCreature);
         tests.test("discovery_a_hit_from_a_real_shadow_creature_discovers_the_strike", 1, ShadowTests::discoverStrike);
         tests.test("discovery_killing_a_real_shadow_creature_discovers_the_kill", 1, ShadowTests::discoverKill);
-        tests.test("discovery_carrying_umbra_discovers_it", EVALUATED + 1, ShadowTests::discoverUmbra);
-        tests.test("shadow_carrying_any_umbra_drains_one_however_much", EVALUATED + 1, ShadowTests::umbra);
+        tests.test("shadow_carried_umbra_drains_nothing_however_much", EVALUATED + 1, ShadowTests::carriedUmbra);
 
         var peaceful = defaults.under("shadow_peaceful", new TestEnvironmentDefinition.AllOf(new Sky(Sky.NOON, Weather.Type.CLEAR), new Peaceful()))
                 .padded(PADDING);
@@ -793,8 +793,8 @@ final class ShadowTests {
         }
     }
 
-    /** One Umbra and a stack drain the same; creative, so no creature comes and neither is company. */
-    private static void umbra(GameTestHelper helper) {
+    /** Neither one Umbra nor a stack drains; creative, so no creature comes and neither is company. */
+    private static void carriedUmbra(GameTestHelper helper) {
         var one = join(helper, new BlockPos(0, 1, 0), 50, GameType.CREATIVE);
         var stack = join(helper, new BlockPos(8, 1, 8), 50, GameType.CREATIVE);
         one.getInventory().add(new ItemStack(ShadowCreatures.UMBRA.get()));
@@ -803,8 +803,8 @@ final class ShadowTests {
             one.doTick();
             stack.doTick();
             if (helper.getTick() >= EVALUATED) {
-                expectNetRate(helper, one, -1);
-                expectNetRate(helper, stack, -1);
+                expectNetRate(helper, one, 0);
+                expectNetRate(helper, stack, 0);
                 helper.succeed();
             }
         });
@@ -855,22 +855,6 @@ final class ShadowTests {
             helper.fail("killing a Real Shadow Creature did not discover the kill");
         }
         helper.succeed();
-    }
-
-    private static void discoverUmbra(GameTestHelper helper) {
-        var player = join(helper, MIDDLE, 50, GameType.CREATIVE);
-        player.getInventory().add(new ItemStack(ShadowCreatures.UMBRA.get()));
-        helper.onEachTick(() -> {
-            player.doTick();
-            if (helper.getTick() < EVALUATED) {
-                return;
-            }
-            expectNetRate(helper, player, -1);
-            if (!Discovery.isKnown(player, Cause.UMBRA)) {
-                helper.fail("carrying Umbra drained Sanity and was not discovered");
-            }
-            helper.succeed();
-        });
     }
 
     // The fixture.
