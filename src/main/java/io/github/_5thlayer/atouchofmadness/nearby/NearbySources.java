@@ -5,6 +5,7 @@ package io.github._5thlayer.atouchofmadness.nearby;
 
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.function.ToDoubleBiFunction;
 
 import com.mojang.serialization.Codec;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
@@ -13,6 +14,7 @@ import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Rate;
+import io.github._5thlayer.atouchofmadness.shadow.ShadowCreature;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,7 +33,8 @@ import net.neoforged.neoforge.registries.datamaps.RegisterDataMapTypesEvent;
  * within the hostile radius drains its {@link #UNSETTLING_WEIGHT}, and any living entity in
  * {@link #COMFORTING}, or any other player in Survival or Adventure, within the company radius restores,
  * counted once. An entity in {@code #comforting} that can be tamed is company only once tamed. Distance
- * is from the player's feet to the entity's.
+ * is from the player's feet to the entity's. A Shadow Creature is no hostile: its drain is its own, and
+ * only its Owner's, which {@link #unsettlingDrain} weighs for it.
  */
 public final class NearbySources {
 
@@ -65,9 +68,18 @@ public final class NearbySources {
     }
 
     private static double hostile(ServerPlayer player) {
+        return unsettlingDrain(player, entity -> !(entity instanceof ShadowCreature), (entity, weight) -> weight);
+    }
+
+    /**
+     * The drain, in Sanity a tick, of the living entities in {@link #UNSETTLING} within the hostile radius
+     * of the player that {@code which} accepts, each by what {@code weigh} makes of its
+     * {@link #UNSETTLING_WEIGHT}, the sum capped as the hostile drain's is.
+     */
+    public static double unsettlingDrain(ServerPlayer player, Predicate<Entity> which, ToDoubleBiFunction<Entity, Double> weigh) {
         var current = rules;
-        var weights = near(player, current.hostileRadius(), entity -> entity.typeHolder().is(UNSETTLING)).stream()
-                .map(NearbySources::weight)
+        var weights = near(player, current.hostileRadius(), entity -> entity.typeHolder().is(UNSETTLING) && which.test(entity)).stream()
+                .map(entity -> weigh.applyAsDouble(entity, weight(entity)))
                 .toList();
         return EnvironmentRules.drainPerTick(current.hostileDrain(weights));
     }

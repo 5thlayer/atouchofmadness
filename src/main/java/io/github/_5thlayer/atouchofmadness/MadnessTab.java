@@ -4,6 +4,7 @@
 package io.github._5thlayer.atouchofmadness;
 
 import io.github._5thlayer.atouchofmadness.crown.FlowerCrown;
+import io.github._5thlayer.atouchofmadness.shadow.ShadowCreatures;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -47,5 +48,6 @@ public final class MadnessTab {
 
     private static void displayItems(CreativeModeTab.ItemDisplayParameters parameters, CreativeModeTab.Output output) {
         output.accept(FlowerCrown.ITEM.get());
+        output.accept(ShadowCreatures.UMBRA.get());
     }
 }

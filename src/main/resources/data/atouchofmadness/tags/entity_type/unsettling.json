@@ -1,5 +1,7 @@
 {
   "values": [
+    "atouchofmadness:gaunt",
+    "atouchofmadness:lurker",
     "minecraft:blaze",
     "minecraft:bogged",
     "minecraft:breeze",
@@ -9,9 +11,9 @@
     "minecraft:creeper",
     "minecraft:drowned",
     "minecraft:elder_guardian",
+    "minecraft:ender_dragon",
     "minecraft:enderman",
     "minecraft:endermite",
-    "minecraft:ender_dragon",
     "minecraft:evoker",
     "minecraft:ghast",
     "minecraft:giant",

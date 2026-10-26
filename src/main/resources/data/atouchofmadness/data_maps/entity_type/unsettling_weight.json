@@ -3,6 +3,8 @@
     "minecraft:enderman": 3,
     "minecraft:warden": 10,
     "minecraft:wither": 10,
-    "minecraft:elder_guardian": 10
+    "minecraft:elder_guardian": 10,
+    "atouchofmadness:lurker": 2,
+    "atouchofmadness:gaunt": 4
   }
 }

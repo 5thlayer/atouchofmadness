@@ -3,6 +3,8 @@
 
 package io.github._5thlayer.atouchofmadness;
 
+import java.util.List;
+
 import io.github._5thlayer.atouchofmadness.crown.CrownRules;
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.moments.MomentRules;
@@ -10,12 +12,14 @@ import io.github._5thlayer.atouchofmadness.music.MusicRules;
 import io.github._5thlayer.atouchofmadness.nearby.NearbyRules;
 import io.github._5thlayer.atouchofmadness.sanity.Sanity;
 import io.github._5thlayer.atouchofmadness.sanity.SanityRules;
+import io.github._5thlayer.atouchofmadness.shadow.ShadowRules;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * The common config, {@code atouchofmadness-common.toml}: where Sanity starts and where its stages
  * begin, the drains of where a player stands, the drain and restore of who is near, the restore of
- * music, the restores of sleep and flowers, the Flower Crown, and whether discovery hides what each does.
+ * music, the restores of sleep and flowers, the Flower Crown, the Shadow Creatures, and whether discovery
+ * hides what each does.
  */
 public final class MadnessConfig {
 
@@ -132,6 +136,76 @@ public final class MadnessConfig {
 
     static {
         BUILDER.pop();
+        BUILDER.comment("The Shadow Creatures, the Lurker and the Gaunt: when and where they come, what they do, and what they drain.").push("shadows");
+    }
+
+    private static final ModConfigSpec.ConfigValue<List<? extends Number>> CAPS = BUILDER
+            .comment("A player Uneasy or Insane may have one Shadow Creature for each of these Sanity values theirs is at or below, Lurkers and Gaunts together.")
+            .defineList("caps", ShadowRules.DEFAULT.caps(), () -> 0.0,
+                    value -> value instanceof Number number && number.doubleValue() >= Sanity.MIN && number.doubleValue() <= Sanity.MAX);
+
+    private static final ModConfigSpec.IntValue INTERVAL = BUILDER
+            .comment("How many seconds apart a player under their cap gets a spawn attempt.")
+            .defineInRange("intervalSeconds", ShadowRules.DEFAULT.intervalTicks() / 20, 1, 3600);
+
+    private static final ModConfigSpec.DoubleValue MIN_DISTANCE = BUILDER
+            .comment("The nearest a creature appears to its Owner, in blocks.")
+            .defineInRange("minDistance", ShadowRules.DEFAULT.minDistance(), 0, 64);
+
+    private static final ModConfigSpec.DoubleValue MAX_DISTANCE = BUILDER
+            .comment("The farthest a creature appears from its Owner, in blocks. Set below minDistance, it is read as minDistance.")
+            .defineInRange("maxDistance", ShadowRules.DEFAULT.maxDistance(), 0, 64);
+
+    private static final ModConfigSpec.DoubleValue FADE_DISTANCE = BUILDER
+            .comment("An Unreal creature fades once its Owner comes this near, in blocks.")
+            .defineInRange("fadeDistance", ShadowRules.DEFAULT.fadeDistance(), 0, 64);
+
+    private static final ModConfigSpec.DoubleValue GAUNT_BELOW = BUILDER
+            .comment("A Gaunt may come only to a player whose Sanity is below this.")
+            .defineInRange("gauntBelow", ShadowRules.DEFAULT.gauntBelow(), Sanity.MIN, Sanity.MAX);
+
+    private static final ModConfigSpec.DoubleValue GAUNT_CHANCE = BUILDER
+            .comment("The chance that a creature coming below gauntBelow is a Gaunt rather than a Lurker.")
+            .defineInRange("gauntChance", ShadowRules.DEFAULT.gauntChance(), 0, 1);
+
+    private static final ModConfigSpec.DoubleValue REAL_FACTOR = BUILDER
+            .comment("How many times its atouchofmadness:unsettling_weight a Real creature drains its Owner nearby, at the nearby section's hostile rate.")
+            .defineInRange("realFactor", ShadowRules.DEFAULT.realFactor(), 0, 100);
+
+    private static final ModConfigSpec.DoubleValue STRIKE = BUILDER
+            .comment("The Sanity each hit from a Real creature takes at once.")
+            .defineInRange("strike", ShadowRules.DEFAULT.strike(), 0, Sanity.MAX);
+
+    private static final ModConfigSpec.DoubleValue UMBRA = BUILDER
+            .comment("The drain in Sanity a minute while a player carries any Umbra, however much.")
+            .defineInRange("umbra", ShadowRules.DEFAULT.umbra(), 0, Sanity.MAX);
+
+    private static final Stats LURKER = Stats.define("lurker", "The Lurker's stats; a change applies to Lurkers that come after it.",
+            ShadowRules.DEFAULT.lurker(), "Its movement speed.");
+
+    private static final Stats GAUNT = Stats.define("gaunt", "The Gaunt's stats; a change applies to Gaunts that come after it.",
+            ShadowRules.DEFAULT.gaunt(), "Its flying speed; it walks at half this.");
+
+    /** A creature's health, attack damage and speed, in a section of their own. */
+    private record Stats(ModConfigSpec.DoubleValue health, ModConfigSpec.DoubleValue damage, ModConfigSpec.DoubleValue speed) {
+
+        static Stats define(String name, String comment, ShadowRules.Stats defaults, String speedComment) {
+            BUILDER.comment(comment).push(name);
+            var stats = new Stats(
+                    BUILDER.comment("Its health.").defineInRange("health", defaults.health(), 1, 1024),
+                    BUILDER.comment("The damage of each of its hits, before vanilla scales it by difficulty.").defineInRange("damage", defaults.damage(), 0, 1024),
+                    BUILDER.comment(speedComment).defineInRange("speed", defaults.speed(), 0, 10));
+            BUILDER.pop();
+            return stats;
+        }
+
+        ShadowRules.Stats get() {
+            return new ShadowRules.Stats(health.get(), damage.get(), speed.get());
+        }
+    }
+
+    static {
+        BUILDER.pop();
         BUILDER.comment("Discovery: what a player learns of Sanity by meeting it.").push("discovery");
     }
 
@@ -188,6 +262,17 @@ public final class MadnessConfig {
             return MomentRules.DEFAULT;
         }
         return new MomentRules(SLEEP.get(), FLOWER.get());
+    }
+
+    /** The defaults until the config loads. */
+    public static ShadowRules shadowRules() {
+        if (!SPEC.isLoaded()) {
+            return ShadowRules.DEFAULT;
+        }
+        double minDistance = MIN_DISTANCE.get();
+        return new ShadowRules(CAPS.get().stream().map(Number::doubleValue).toList(), INTERVAL.get() * 20, minDistance,
+                Math.max(MAX_DISTANCE.get(), minDistance), FADE_DISTANCE.get(), GAUNT_BELOW.get(), GAUNT_CHANCE.get(), REAL_FACTOR.get(),
+                STRIKE.get(), UMBRA.get(), LURKER.get(), GAUNT.get());
     }
 
     /** On until the config loads. */

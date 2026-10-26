@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/root",
+  "criteria": {
+    "shadow_creature": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "shadow_creature"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.shadow_creature.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:wither_rose"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.shadow_creature.title"
+    }
+  },
+  "requirements": [
+    [
+      "shadow_creature"
+    ]
+  ]
+}

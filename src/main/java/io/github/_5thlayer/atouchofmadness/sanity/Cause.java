@@ -20,10 +20,16 @@ public enum Cause {
     MUSIC,
     STALE_DISC,
     FLOWER_CROWN,
+    /** A Shadow Creature of the player's own nearby, reported apart from {@link #HOSTILE}. */
+    SHADOW_CREATURE,
+    /** Raw Umbra carried. */
+    UMBRA,
     /** Eating any food with a Sanity Modifier other than 0, one cause for all of them. */
     FOOD,
     SLEEP,
-    FLOWER;
+    FLOWER,
+    /** A hit from a Real Shadow Creature. */
+    SHADOW_STRIKE;
 
     /** Its id, as data names it: {@code low_light}. */
     public String id() {

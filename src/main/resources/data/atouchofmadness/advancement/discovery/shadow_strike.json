@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/shadow_creature",
+  "criteria": {
+    "shadow_strike": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "shadow_strike"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.shadow_strike.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:stone_sword"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.shadow_strike.title"
+    }
+  },
+  "requirements": [
+    [
+      "shadow_strike"
+    ]
+  ]
+}
