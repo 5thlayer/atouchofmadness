@@ -12,7 +12,6 @@ libworks {
     // ADR-0002), so its game tests run without libworks-gametest.
 }
 
-
 repositories {
     // EMI for 26.1 is an unofficial port, published on CurseForge only.
     maven {

@@ -118,7 +118,7 @@ public final class MusicSource {
         if (disc.isEmpty()) {
             return Rate.NONE;
         }
-        var heard = player.getData(HISTORY).hear(jukeboxId(jukebox), songId(jukebox, player.level()), disc.get());
+        var heard = hear(player, jukebox, disc.get());
         player.setData(HISTORY, heard.history());
         double perTick = -EnvironmentRules.drainPerTick(current.restore(heard.factor()));
         // A Stale disc's play is music too.
@@ -141,7 +141,7 @@ public final class MusicSource {
             return OptionalDouble.empty();
         }
         // The history the player would have once they heard it is thrown away: only the factor is wanted.
-        return OptionalDouble.of(player.getData(HISTORY).hear(jukeboxId(jukebox), songId(jukebox, player.level()), disc.get()).factor());
+        return OptionalDouble.of(hear(player, jukebox, disc.get()).factor());
     }
 
     /**
@@ -157,6 +157,11 @@ public final class MusicSource {
         long id = level.getRandom().nextLong();
         jukebox.setData(SONG_ID, id);
         return id;
+    }
+
+    /** What hearing the jukebox's play of {@code disc} would make the player's history, which this doesn't set. */
+    private static DiscHistory.Heard hear(ServerPlayer player, JukeboxBlockEntity jukebox, String disc) {
+        return player.getData(HISTORY).hear(jukeboxId(jukebox), songId(jukebox, player.level()), disc);
     }
 
     /** The disc a jukebox holds, by its jukebox song's id, if it holds one. */

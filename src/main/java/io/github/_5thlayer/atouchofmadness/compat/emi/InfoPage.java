@@ -4,7 +4,8 @@
 package io.github._5thlayer.atouchofmadness.compat.emi;
 
 import java.util.List;
-import java.util.function.Supplier;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
@@ -12,6 +13,8 @@ import dev.emi.emi.api.recipe.VanillaEmiRecipeCategories;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.api.widget.WidgetHolder;
+import io.github._5thlayer.atouchofmadness.discovery.ClientDiscovery;
+import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -19,10 +22,10 @@ import net.minecraft.util.FormattedCharSequence;
 
 /**
  * An information page in EMI's own Info category, laid out as EMI's are: the thing it is about in one
- * slot, cycling through each stack it covers, and its text below. Unlike EMI's own, it draws its text
- * anew each frame, so a page changes as the player discovers what it covers, with nothing reloading
- * EMI. Its height is its text's when EMI lays it out, so text that grows while it is open may run past
- * its foot until it is opened again.
+ * slot, cycling through each stack it covers, and its text below. Unlike EMI's own, its text is what
+ * the client's player has discovered, drawn anew each frame, so a page changes as they discover what it
+ * covers, with nothing reloading EMI. It is as tall as its text with everything discovered, so the text
+ * never outgrows it.
  */
 final class InfoPage implements EmiRecipe {
 
@@ -34,10 +37,10 @@ final class InfoPage implements EmiRecipe {
 
     private final Identifier id;
     private final EmiIngredient stacks;
-    private final Supplier<List<Component>> text;
+    private final Function<Predicate<Cause>, List<Component>> text;
 
-    /** A page with this id, about these stacks, whose paragraphs {@code text} gives at each frame. */
-    InfoPage(Identifier id, List<EmiStack> stacks, Supplier<List<Component>> text) {
+    /** A page with this id, about these stacks, whose paragraphs {@code text} gives for what is known. */
+    InfoPage(Identifier id, List<EmiStack> stacks, Function<Predicate<Cause>, List<Component>> text) {
         this.id = id;
         this.stacks = EmiIngredient.of(stacks);
         this.text = text;
@@ -75,7 +78,7 @@ final class InfoPage implements EmiRecipe {
 
     @Override
     public int getDisplayHeight() {
-        return SLOT + PADDING + lines().size() * Minecraft.getInstance().font.lineHeight;
+        return SLOT + PADDING + lines(cause -> true).size() * Minecraft.getInstance().font.lineHeight;
     }
 
     @Override
@@ -83,16 +86,16 @@ final class InfoPage implements EmiRecipe {
         widgets.addSlot(stacks, (WIDTH - SLOT) / 2, 0);
         var font = Minecraft.getInstance().font;
         widgets.addDrawable(0, SLOT + PADDING, WIDTH, widgets.getHeight() - SLOT - PADDING, (graphics, mouseX, mouseY, delta) -> {
-            var lines = lines();
+            var lines = lines(ClientDiscovery::isKnown);
             for (int i = 0; i < lines.size(); i++) {
                 graphics.text(font, lines.get(i), 0, i * font.lineHeight, TEXT_COLOR, false);
             }
         });
     }
 
-    /** The text as it stands now, wrapped to the page's width. */
-    private List<FormattedCharSequence> lines() {
+    /** The text for what is known, wrapped to the page's width. */
+    private List<FormattedCharSequence> lines(Predicate<Cause> known) {
         var font = Minecraft.getInstance().font;
-        return text.get().stream().flatMap(paragraph -> font.split(paragraph, WIDTH - PADDING).stream()).toList();
+        return text.apply(known).stream().flatMap(paragraph -> font.split(paragraph, WIDTH - PADDING).stream()).toList();
     }
 }

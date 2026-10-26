@@ -89,9 +89,15 @@ public final class Moments {
         }
     }
 
-    private static void applyModifier(ServerPlayer player, Holder<Item> item) {
+    /** An item's Sanity Modifier, 0 for one with none. */
+    public static int modifier(Holder<Item> item) {
         Integer modifier = item.getData(SANITY_MODIFIER);
-        if (modifier != null && modifier != 0) {
+        return modifier == null ? 0 : modifier;
+    }
+
+    private static void applyModifier(ServerPlayer player, Holder<Item> item) {
+        int modifier = modifier(item);
+        if (modifier != 0) {
             PlayerSanity.add(player, modifier, Cause.FOOD);
         }
     }
