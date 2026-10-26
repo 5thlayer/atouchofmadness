@@ -4,18 +4,16 @@
 package io.github._5thlayer.atouchofmadness.gametest;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import com.mojang.authlib.GameProfile;
-import io.github._5thlayer.atouchofmadness.MadnessConfig;
 import io.github._5thlayer.atouchofmadness.crown.FlowerCrown;
+import io.github._5thlayer.atouchofmadness.discovery.Discoverables;
 import io.github._5thlayer.atouchofmadness.discovery.Discovery;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
@@ -24,11 +22,13 @@ import io.github._5thlayer.atouchofmadness.sanity.Stage;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition.Weather;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -36,16 +36,15 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.JukeboxBlockEntity;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * Discovery (ADR 0006): each discoverable thing's advancement, at {@code atouchofmadness:discovery/<id>},
  * is done the first time it moves the player's Sanity, or for a Stage the first time they reach it, and
  * being done is the discovery. The root is granted on join; each child is hidden until done, toasts, and
  * keeps out of chat. A continuous source moves Sanity only while it is not already at the end the source
- * pushes toward, whatever the others do. The game-test pack marks Wet known from the start, its
- * advancement firing on {@code minecraft:tick}, and removes Freezing's, which then counts as known.
- * Each test joins players of its own, ticks them itself, and logs them out however it ends.
+ * pushes toward, whatever the others do. A pack, {@code gametest_packs/discovery}, marks Wet known from
+ * the start, its advancement firing on {@code minecraft:tick}, and removes Freezing's, which then counts
+ * as known. Each test joins players of its own, ticks them itself, and logs them out however it ends.
  */
 final class DiscoveryTests {
 
@@ -59,9 +58,8 @@ final class DiscoveryTests {
     /** Two evaluations, so one has come whichever tick of a second is the player's own. */
     private static final int EVALUATED = 2 * PlayerSanity.EVALUATION_TICKS;
 
-    /** The game-test pack's overrides. */
-    private static final Cause KNOWN_FROM_THE_START = Cause.WET;
-    private static final Cause REMOVED = Cause.FREEZING;
+    /** Wider than the company radius. */
+    private static final int PADDING = 9;
 
     static {
         Discovery.onTell((player, known) -> TOLD.put(player.getUUID(), known));
@@ -80,13 +78,14 @@ final class DiscoveryTests {
         tests.test("discovery_a_restore_at_full_discovers_nothing_while_a_drain_moves_sanity", PlayerSanity.EVALUATION_TICKS + 1, DiscoveryTests::restoreAtFull);
         tests.test("discovery_jumping_to_insane_reaches_uneasy_too", 1, DiscoveryTests::stages);
         tests.test("discovery_a_stage_is_reached_on_join", 1, DiscoveryTests::stageOnJoin);
-        tests.test("discovery_a_datapack_marks_a_source_known_on_join", 20, DiscoveryTests::knownFromTheStart);
-        tests.test("discovery_a_missing_advancement_counts_as_known", 1, DiscoveryTests::missing);
-        tests.test("discovery_the_client_is_told_what_is_known_on_login_and_on_each_discovery", 20, DiscoveryTests::told);
+        tests.test("discovery_the_client_is_told_what_is_known_on_login_and_on_each_discovery", 1, DiscoveryTests::told);
+        // Padded, so the villager is company to no other test's player.
+        tests.padded(PADDING).test("discovery_a_drain_at_empty_discovers_nothing_while_a_restore_moves_sanity", EVALUATED + 1,
+                DiscoveryTests::drainAtEmpty);
 
-        // Alone in its batch, since the switch is off for every player while it runs.
-        tests.under("discovery_off", new Sky(Sky.NOON, Weather.Type.CLEAR))
-                .test("discovery_off_answers_known_for_everything_and_still_earns", 1, DiscoveryTests::off);
+        // The pack is on for every test in its batch.
+        tests.under("discovery_pack", new TestEnvironmentDefinition.AllOf(new Sky(Sky.NOON, Weather.Type.CLEAR), new WithTestPack("discovery")))
+                .test("discovery_a_pack_marks_one_known_from_the_start_and_removes_another", 20, DiscoveryTests::pack);
         // A jukebox reaches further than tests are spaced apart, as in MusicTests.
         tests.under("discovery_music", new Sky(Sky.NOON, Weather.Type.CLEAR))
                 .test("discovery_a_stale_play_discovers_music_and_the_stale_disc", 2 * EVALUATED + 1, DiscoveryTests::stalePlay);
@@ -95,7 +94,7 @@ final class DiscoveryTests {
     private static void root(GameTestHelper helper) {
         var player = join(helper, MIDDLE, 100);
         for (var cause : Cause.values()) {
-            if (cause != KNOWN_FROM_THE_START && cause != REMOVED && Discovery.isKnown(player, cause)) {
+            if (Discovery.isKnown(player, cause)) {
                 helper.fail(cause.id() + " is known to a new player");
             }
         }
@@ -116,10 +115,7 @@ final class DiscoveryTests {
         if (rootDisplay.isHidden() || rootDisplay.shouldShowToast() || rootDisplay.shouldAnnounceChat() || rootDisplay.getBackground().isEmpty()) {
             helper.fail("the root is hidden, toasts, announces or has no background");
         }
-        for (var id : ids()) {
-            if (id.equals(REMOVED.id())) {
-                continue;
-            }
+        for (var id : Discoverables.IDS) {
             var advancement = advancement(helper, Discovery.advancementId(id));
             var display = advancement.value().display().orElseThrow();
             if (!display.isHidden() || !display.shouldShowToast() || display.shouldAnnounceChat()) {
@@ -141,9 +137,6 @@ final class DiscoveryTests {
     private static void eachCause(GameTestHelper helper) {
         var player = join(helper, MIDDLE, 90);
         for (var cause : Cause.values()) {
-            if (cause == KNOWN_FROM_THE_START || cause == REMOVED) {
-                continue;
-            }
             var advancement = advancement(helper, Discovery.advancementId(cause.id()));
             if (done(player, advancement)) {
                 helper.fail(cause.id() + " is done before it moved Sanity");
@@ -254,70 +247,57 @@ final class DiscoveryTests {
         helper.succeed();
     }
 
-    private static void knownFromTheStart(GameTestHelper helper) {
-        var player = join(helper, MIDDLE, 100);
+    /**
+     * In water by day, Company near: Wet's drain is outweighed, so Sanity rises from 0, and Company is
+     * discovered while Wet, which could not move Sanity below 0, is not.
+     */
+    private static void drainAtEmpty(GameTestHelper helper) {
+        for (var pos : BlockPos.betweenClosed(MIDDLE.offset(-1, 0, -1), MIDDLE.offset(1, 0, 1))) {
+            helper.setBlock(pos, Blocks.STONE);
+        }
+        helper.setBlock(MIDDLE, Blocks.WATER);
+        helper.spawn(EntityType.VILLAGER, CORNER.west(2));
+        var player = join(helper, MIDDLE, 0);
         helper.onEachTick(() -> {
-            if (Discovery.isKnown(player, KNOWN_FROM_THE_START)) {
+            player.doTick();
+            if (PlayerSanity.get(player).value() <= Sanity.MIN) {
+                return;
+            }
+            if (!Discovery.isKnown(player, Cause.COMPANY)) {
+                helper.fail("Company moved Sanity and was not discovered");
+            }
+            if (Discovery.isKnown(player, Cause.WET)) {
+                helper.fail("Wet was discovered at 0, while Company moved Sanity");
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Wet, overridden to fire on {@code minecraft:tick}, is known after a new player's first tick; Freezing's, removed, is known at once. */
+    private static void pack(GameTestHelper helper) {
+        if (helper.getLevel().getServer().getAdvancements().get(Discovery.advancementId(Cause.FREEZING.id())) != null) {
+            helper.fail("the pack did not remove Freezing's advancement");
+        }
+        var player = join(helper, MIDDLE, 100);
+        if (!Discovery.isKnown(player, Cause.FREEZING)) {
+            helper.fail("a Cause whose advancement is missing is not known");
+        }
+        helper.onEachTick(() -> {
+            if (Discovery.isKnown(player, Cause.WET)) {
                 helper.succeed();
             }
         });
     }
 
-    private static void missing(GameTestHelper helper) {
-        if (helper.getLevel().getServer().getAdvancements().get(Discovery.advancementId(REMOVED.id())) != null) {
-            helper.fail("the game-test pack did not remove " + REMOVED.id() + "'s advancement");
-        }
-        var player = join(helper, MIDDLE, 100);
-        if (!Discovery.isKnown(player, REMOVED)) {
-            helper.fail("a Cause whose advancement is missing is not known");
-        }
-        helper.succeed();
-    }
-
-    /** Told on login, then again once the tick trigger grants Wet, then once Low light moves Sanity. */
+    /** Told on login, and again once Low light moves Sanity. */
     private static void told(GameTestHelper helper) {
         var player = join(helper, MIDDLE, 50);
         expectTold(helper, player, "on login");
-        boolean[] discovered = {false};
-        helper.onEachTick(() -> {
-            if (!Discovery.isKnown(player, KNOWN_FROM_THE_START)) {
-                return;
-            }
-            expectTold(helper, player, "once the tick trigger granted " + KNOWN_FROM_THE_START.id());
-            if (!discovered[0]) {
-                discovered[0] = true;
-                PlayerSanity.add(player, -1, Cause.LOW_LIGHT);
-                if (!TOLD.getOrDefault(player.getUUID(), Set.of()).contains(Cause.LOW_LIGHT.id())) {
-                    helper.fail("the client was not told of Low light's discovery");
-                }
-                expectTold(helper, player, "after a discovery");
-                helper.succeed();
-            }
-        });
-    }
-
-    private static void off(GameTestHelper helper) {
-        var enabled = (ModConfigSpec.BooleanValue) MadnessConfig.SPEC.getValues().get(List.of("discovery", "enabled"));
-        enabled.set(false);
-        SanityTests.reloadConfig();
-        try {
-            var player = join(helper, MIDDLE, 50);
-            var all = Set.copyOf(ids());
-            if (!Discovery.known(player).equals(all)) {
-                helper.fail("with discovery off, a new player knows " + Discovery.known(player) + ", not everything");
-            }
-            if (!TOLD.getOrDefault(player.getUUID(), Set.of()).equals(all)) {
-                helper.fail("with discovery off, the client was not told everything is known");
-            }
-            var lowLight = advancement(helper, Discovery.advancementId(Cause.LOW_LIGHT.id()));
-            PlayerSanity.add(player, -1, Cause.LOW_LIGHT);
-            if (!done(player, lowLight)) {
-                helper.fail("with discovery off, Low light's advancement was not earned");
-            }
-        } finally {
-            enabled.set(true);
-            SanityTests.reloadConfig();
+        PlayerSanity.add(player, -1, Cause.LOW_LIGHT);
+        if (!TOLD.getOrDefault(player.getUUID(), Set.of()).contains(Cause.LOW_LIGHT.id())) {
+            helper.fail("the client was not told of Low light's discovery");
         }
+        expectTold(helper, player, "after a discovery");
         helper.succeed();
     }
 
@@ -352,12 +332,6 @@ final class DiscoveryTests {
                 helper.succeed();
             }
         });
-    }
-
-    /** Every discoverable thing's id: each Cause's, then each Stage's below Sane. */
-    private static List<String> ids() {
-        return Stream.concat(Stream.of(Cause.values()).map(Cause::id),
-                Stream.of(Stage.UNEASY, Stage.INSANE).map(stage -> stage.name().toLowerCase(Locale.ROOT))).toList();
     }
 
     /** Ticks the players each tick, and once two evaluations have come checks, then succeeds. */

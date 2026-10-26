@@ -32,7 +32,7 @@ public final class SanityChangedTrigger extends SimpleCriterionTrigger<SanityCha
 
         static final Codec<Instance> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),
-                Discovery.enumCodec(Cause.class).fieldOf("source").forGetter(Instance::source)
+                IdCodecs.CAUSE.fieldOf("source").forGetter(Instance::source)
         ).apply(instance, Instance::new));
     }
 }

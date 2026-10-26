@@ -8,12 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Locale;
 import java.util.stream.Stream;
 
-import io.github._5thlayer.atouchofmadness.sanity.Cause;
-import io.github._5thlayer.atouchofmadness.sanity.Stage;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -29,8 +25,7 @@ class DiscoveryAdvancementsTest {
     private static final Path LANG = Path.of("src/main/resources/assets/atouchofmadness/lang/en_us.json");
 
     static Stream<String> ids() {
-        return Stream.concat(Arrays.stream(Cause.values()).map(Cause::id),
-                Stream.of(Stage.UNEASY, Stage.INSANE).map(stage -> stage.name().toLowerCase(Locale.ROOT)));
+        return Discoverables.IDS.stream();
     }
 
     @ParameterizedTest

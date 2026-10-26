@@ -1,0 +1,13 @@
+{
+  "pack": {
+    "description": "A Touch of Madness game tests: discovery's pack overrides",
+    "min_format": [
+      101,
+      1
+    ],
+    "max_format": [
+      101,
+      1
+    ]
+  }
+}

@@ -230,11 +230,6 @@ final class SanityTests {
     /** Sets the config's Sane line in memory, without saving the file, and reloads it as a change to the file would. */
     private static void reload(ModConfigSpec.DoubleValue saneAbove, double value) {
         saneAbove.set(value);
-        reloadConfig();
-    }
-
-    /** Tells the Pillar its common config reloaded, as a change to its file would, once a test has set a value in it. */
-    static void reloadConfig() {
         ModList.get().getModContainerById(ATouchOfMadness.MOD_ID).orElseThrow()
                 .acceptEvent(new ModConfigEvent.Reloading(config));
     }

@@ -4,9 +4,9 @@
 package io.github._5thlayer.atouchofmadness;
 
 import io.github._5thlayer.atouchofmadness.crown.FlowerCrown;
+import io.github._5thlayer.atouchofmadness.discovery.Discovery;
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentDrains;
 import io.github._5thlayer.atouchofmadness.moments.Moments;
-import io.github._5thlayer.atouchofmadness.discovery.Discovery;
 import io.github._5thlayer.atouchofmadness.music.MusicSource;
 import io.github._5thlayer.atouchofmadness.nearby.NearbySources;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;

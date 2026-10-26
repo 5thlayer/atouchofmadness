@@ -32,7 +32,7 @@ public final class StageReachedTrigger extends SimpleCriterionTrigger<StageReach
 
         static final Codec<Instance> CODEC = RecordCodecBuilder.create(instance -> instance.group(
                 EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),
-                Discovery.enumCodec(Stage.class).fieldOf("stage").forGetter(Instance::stage)
+                IdCodecs.STAGE.fieldOf("stage").forGetter(Instance::stage)
         ).apply(instance, Instance::new));
     }
 }

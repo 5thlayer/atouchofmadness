@@ -3,10 +3,8 @@
 
 package io.github._5thlayer.atouchofmadness.discovery;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -14,10 +12,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
@@ -51,12 +46,6 @@ public final class Discovery {
 
     /** The tab's root, which every player is granted as they join. */
     public static final Identifier ROOT = advancementId("root");
-
-    private static final List<Stage> STAGES = List.of(Stage.UNEASY, Stage.INSANE);
-
-    /** Every discoverable thing's id: each Cause's, then each Stage's below Sane. */
-    private static final List<String> IDS = Stream.concat(Arrays.stream(Cause.values()).map(Cause::id), STAGES.stream().map(Discovery::id))
-            .toList();
 
     private static final DeferredRegister<CriterionTrigger<?>> TRIGGERS =
             DeferredRegister.create(Registries.TRIGGER_TYPE, ATouchOfMadness.MOD_ID);
@@ -94,12 +83,12 @@ public final class Discovery {
 
     /** As {@link #isKnown(ServerPlayer, Cause)}; Sane, which is no discovery, is always known. */
     public static boolean isKnown(ServerPlayer player, Stage stage) {
-        return stage == Stage.SANE || isKnown(player, id(stage));
+        return stage == Stage.SANE || isKnown(player, stage.id());
     }
 
     /** The ids of every discoverable thing {@link #isKnown} answers known for, for the player. */
     public static Set<String> known(ServerPlayer player) {
-        return IDS.stream().filter(id -> isKnown(player, id)).collect(Collectors.toUnmodifiableSet());
+        return Discoverables.IDS.stream().filter(id -> isKnown(player, id)).collect(Collectors.toUnmodifiableSet());
     }
 
     /** The advancement a discoverable thing's id stands for, or the root's for {@code root}. */
@@ -112,20 +101,6 @@ public final class Discovery {
         TELL_LISTENERS.add(listener);
     }
 
-    static String id(Stage stage) {
-        return stage.name().toLowerCase(Locale.ROOT);
-    }
-
-    /** An enum by its lower-case name, as data names it. */
-    static <E extends Enum<E>> Codec<E> enumCodec(Class<E> type) {
-        return Codec.STRING.comapFlatMap(name -> Arrays.stream(type.getEnumConstants())
-                .filter(constant -> constant.name().toLowerCase(Locale.ROOT).equals(name))
-                .findFirst()
-                .map(DataResult::success)
-                .orElseGet(() -> DataResult.error(() -> "no " + type.getSimpleName() + " " + name)),
-                constant -> constant.name().toLowerCase(Locale.ROOT));
-    }
-
     private static boolean isKnown(ServerPlayer player, String id) {
         if (!MadnessConfig.discoveryEnabled()) {
             return true;
@@ -136,7 +111,7 @@ public final class Discovery {
 
     /** Each Stage from Uneasy down to the one entered is reached, so one passed through on the way down is too. */
     private static void stageChanged(ServerPlayer player, StageChange change) {
-        for (var stage : STAGES) {
+        for (var stage : Discoverables.STAGES) {
             if (stage.compareTo(change.to()) <= 0) {
                 STAGE_REACHED.get().trigger(player, stage);
             }

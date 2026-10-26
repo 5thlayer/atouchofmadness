@@ -44,6 +44,7 @@ public final class ATouchOfMadnessGameTests {
     static {
         TEST_TYPES.register("code", () -> CodeGameTest.CODEC);
         ENVIRONMENT_TYPES.register("sky", () -> Sky.CODEC);
+        ENVIRONMENT_TYPES.register("with_test_pack", () -> WithTestPack.CODEC);
     }
 
     private ATouchOfMadnessGameTests() {
@@ -58,6 +59,7 @@ public final class ATouchOfMadnessGameTests {
         TEST_TYPES.register(modBus);
         ENVIRONMENT_TYPES.register(modBus);
         SanityTests.listen(modBus);
+        modBus.addListener(WithTestPack::addPackFinders);
         // Posted only when game tests are enabled, which a production game never is.
         modBus.addListener(ATouchOfMadnessGameTests::registerTests);
     }

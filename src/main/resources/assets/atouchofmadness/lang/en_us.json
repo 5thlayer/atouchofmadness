@@ -34,7 +34,7 @@
   "advancements.atouchofmadness.discovery.flower.title": "Stop and Smell the Flowers",
   "advancements.atouchofmadness.discovery.flower.description": "Picking a flower restores a little Sanity.",
   "advancements.atouchofmadness.discovery.uneasy.title": "Uneasy",
-  "advancements.atouchofmadness.discovery.uneasy.description": "Your Sanity has slipped: you are Uneasy, and things that aren't there begin to appear.",
+  "advancements.atouchofmadness.discovery.uneasy.description": "Your Sanity has slipped below Sane: you are Uneasy.",
   "advancements.atouchofmadness.discovery.insane.title": "Insane",
-  "advancements.atouchofmadness.discovery.insane.description": "Your Sanity is nearly gone: you are Insane, and the shadows are real."
+  "advancements.atouchofmadness.discovery.insane.description": "Your Sanity is nearly gone: you are Insane."
 }
