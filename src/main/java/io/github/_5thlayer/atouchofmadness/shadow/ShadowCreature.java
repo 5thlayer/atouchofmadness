@@ -37,9 +37,10 @@ import org.jspecify.annotations.Nullable;
  * blocks. While the Owner is Uneasy it is Unreal: it stalks them at the edge of sight, takes and deals
  * no harm, collides with nothing, and fades once they come within the fade distance or strike it.
  * While they are Insane it is Real: it hunts them, coming out beside them where a block is in its way,
- * can be killed, and each of its hits takes the strike from their Sanity. It is never saved, and vanishes as soon as its Owner is
- * gone, dead, in another dimension, asleep or out of Survival and Adventure; the spawner removes it when
- * the Owner's cap drops below their count. It never stops its Owner sleeping, being no {@code Monster}.
+ * can be killed, and each of its hits takes the strike from their Sanity. It is never saved, and
+ * vanishes as soon as its Owner is gone, dead, in another dimension, asleep or out of Survival and
+ * Adventure; the spawner removes it when the Owner's cap drops below their count. It never stops its
+ * Owner sleeping, being no {@code Monster}.
  */
 public abstract class ShadowCreature extends PathfinderMob {
 
@@ -316,7 +317,10 @@ public abstract class ShadowCreature extends PathfinderMob {
         }
     }
 
-    /** While Real, drifts straight at its Owner, its target, and strikes whenever in reach. */
+    /**
+     * While Real, drifts straight at its Owner, its target, until in reach, and strikes whenever it can:
+     * in reach but inside a block, it comes out beside them first.
+     */
     private final class HuntGoal extends Goal {
 
         private int cooldown;
@@ -347,8 +351,16 @@ public abstract class ShadowCreature extends PathfinderMob {
                 return;
             }
             getLookControl().setLookAt(target, 30, 30);
-            var toward = isInsideBlocks() && isWithinMeleeAttackRange(target) ? clearBeside(target) : target.position();
-            driftControl.setWantedPosition(toward.x, toward.y, toward.z, 1);
+            // In reach it holds where it is clear, so it doesn't drift back into the block it came out of.
+            if (!isWithinMeleeAttackRange(target)) {
+                driftControl.setWantedPosition(target.getX(), target.getY(), target.getZ(), 1);
+            } else if (isInsideBlocks()) {
+                var clear = clearBeside(target);
+                driftControl.setWantedPosition(clear.x, clear.y, clear.z, 1);
+            } else {
+                driftControl.stop();
+                setDeltaMovement(Vec3.ZERO);
+            }
             if (--cooldown <= 0 && isWithinMeleeAttackRange(target) && level() instanceof ServerLevel level && doHurtTarget(level, target)) {
                 swing(InteractionHand.MAIN_HAND);
                 cooldown = ATTACK_TICKS;

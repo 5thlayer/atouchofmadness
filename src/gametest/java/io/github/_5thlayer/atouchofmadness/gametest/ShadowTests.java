@@ -78,8 +78,8 @@ final class ShadowTests {
     /** Two evaluations, so one has come whichever tick of a second is the player's own. */
     private static final int EVALUATED = 2 * PlayerSanity.EVALUATION_TICKS;
 
-    /** A second, long enough for anything inside a block to suffocate. */
-    private static final int A_SECOND = 20;
+    /** A second, long enough for anything inside a block to take suffocation damage. */
+    private static final int SUFFOCATION_TICKS = 20;
 
     /** Wider than the company radius. */
     private static final int PADDING = 9;
@@ -131,7 +131,7 @@ final class ShadowTests {
         for (var kind : KINDS) {
             String name = kind.name();
             tests.test("shadow_phase_a_real_" + name + "_reaches_its_owner_through_a_wall", 200, helper -> throughAWall(helper, kind));
-            tests.test("shadow_phase_a_" + name + "_inside_a_block_is_unharmed_and_lands_no_hit", A_SECOND + 1, helper -> insideABlock(helper, kind));
+            tests.test("shadow_phase_a_" + name + "_inside_a_block_is_unharmed_and_lands_no_hit", SUFFOCATION_TICKS + 1, helper -> insideABlock(helper, kind));
             tests.test("shadow_phase_a_real_" + name + "_comes_out_of_a_wall_to_keep_striking_its_owner", 300, helper -> againstAWall(helper, kind));
             tests.test("shadow_a_real_" + name + "_drops_its_umbra", 1, helper -> drops(helper, kind));
             tests.test("shadow_a_" + name + "_is_sent_to_its_owner_and_the_insane_and_only_they_hit_it", 1, helper -> sentTo(helper, kind));
@@ -283,11 +283,7 @@ final class ShadowTests {
 
     /** A wall across the platform, floor to ceiling: the creature, on the far side, drifts through it to strike. */
     private static void throughAWall(GameTestHelper helper, Kind kind) {
-        for (int y = 1; y <= 4; y++) {
-            for (int z = 0; z <= 8; z++) {
-                helper.setBlock(new BlockPos(4, y, z), Blocks.STONE);
-            }
-        }
+        wall(helper, 4);
         var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
         place(helper, kind, owner, new BlockPos(7, 1, 4));
         float health = owner.getHealth();
@@ -296,6 +292,15 @@ final class ShadowTests {
                 helper.succeed();
             }
         });
+    }
+
+    /** A stone wall across the platform at {@code x}, floor to ceiling. */
+    private static void wall(GameTestHelper helper, int x) {
+        for (int y = 1; y <= 4; y++) {
+            for (int z = 0; z <= 8; z++) {
+                helper.setBlock(new BlockPos(x, y, z), Blocks.STONE);
+            }
+        }
     }
 
     /**
@@ -309,7 +314,7 @@ final class ShadowTests {
         var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
         var creature = place(helper, kind, owner, at);
         creature.setNoAi(true);
-        helper.runAtTickTime(A_SECOND, () -> {
+        helper.runAtTickTime(SUFFOCATION_TICKS, () -> {
             if (creature.getHealth() < creature.getMaxHealth()) {
                 helper.fail("a " + kind.name() + " inside a block was harmed");
             }
@@ -326,17 +331,13 @@ final class ShadowTests {
     }
 
     /**
-     * Its Owner stands flush against a wall, and the creature comes at them through it, from behind:
-     * stopping short of them would leave it in the wall, so it comes out beside them and strikes again
-     * and again. The Owner, never ticked, would stay
-     * invulnerable after the first hit, so the test lets it lapse; each strike shows in their Sanity.
+     * Its Owner stands flush against a wall, and the creature comes at them through it, from behind: a
+     * Gaunt, wider than a player, would be in the wall centred on them, so it comes out beside them and
+     * strikes again and again. The Owner, never ticked, would stay invulnerable after the first hit, so
+     * the test lets it lapse; each strike shows in their Sanity, and three show it struck once out.
      */
     private static void againstAWall(GameTestHelper helper, Kind kind) {
-        for (int y = 1; y <= 4; y++) {
-            for (int z = 0; z <= 8; z++) {
-                helper.setBlock(new BlockPos(0, y, z), Blocks.STONE);
-            }
-        }
+        wall(helper, 0);
         var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
         var flush = Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(1, 1, 4))).add(owner.getBbWidth() / 2 - 0.5, 0, 0);
         owner.teleport(new TeleportTransition(helper.getLevel(), flush, Vec3.ZERO, 0, 0, TeleportTransition.DO_NOTHING));
