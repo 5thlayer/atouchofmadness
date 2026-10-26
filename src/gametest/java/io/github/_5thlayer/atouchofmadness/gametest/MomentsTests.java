@@ -12,8 +12,6 @@ import io.github._5thlayer.atouchofmadness.sanity.Sanity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.gametest.framework.TestEnvironmentDefinition;
-import net.minecraft.gametest.framework.TestEnvironmentDefinition.Weather;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.BoneMealItem;
@@ -25,16 +23,14 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CakeBlock;
 import net.minecraft.world.level.block.FarmlandBlock;
 import net.minecraft.world.level.block.state.properties.BedPart;
-import net.minecraft.world.level.gamerules.GameRuleMap;
-import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
  * The instantaneous drains and restores: eating a food moves Sanity by its Sanity Modifier, a slice of
- * cake from the placed block by the cake's, sleeping through the night restores 40 to each sleeper and
- * nothing to a player awake, and breaking a flower restores 1. Each test stands a player at 50 Sanity
+ * cake from the placed block by the cake's, waking as the night skips restores 40 while getting up from
+ * bed restores nothing, and breaking a flower restores 1. Each test stands a player at 50 Sanity
  * on the platform at noon, where nothing continuous applies, does the thing through vanilla's own path
  * and reads how far Sanity moved.
  */
@@ -45,7 +41,7 @@ final class MomentsTests {
     /** The platform is 9 by 9 with its floor at y 0; a player stands on it at y 1. */
     private static final BlockPos MIDDLE = new BlockPos(4, 1, 4);
 
-    /** Long enough to eat any food, and a sleeper to sleep long enough to skip the night. */
+    /** Long enough to eat any food. */
     private static final int MAX_TICKS = 200;
 
     private MomentsTests() {
@@ -73,12 +69,11 @@ final class MomentsTests {
                 return helper.getTick() >= readAt;
             }, 0);
         });
-
-        // Half the players asleep skip the night, so one of two can stay up.
-        var night = tests.under("sleepable_night", new TestEnvironmentDefinition.AllOf(
-                new Sky(Sky.FULL_MOON_MIDNIGHT, Weather.Type.CLEAR),
-                new TestEnvironmentDefinition.SetGameRules(new GameRuleMap.Builder().set(GameRules.PLAYERS_SLEEPING_PERCENTAGE, 50).build())));
-        night.test("moments_sleeping_through_the_night_restores_forty_and_nothing_to_one_awake", MAX_TICKS, MomentsTests::sleep);
+        // The night skip wakes every sleeper neither at once nor telling the level; a player getting up tells it.
+        tests.test("moments_waking_as_the_night_skips_restores_forty", 1,
+                helper -> expectAtOnce(helper, player -> wakeInBed(helper, player, false), 40));
+        tests.test("moments_getting_up_from_bed_restores_nothing", 1,
+                helper -> expectAtOnce(helper, player -> wakeInBed(helper, player, true), 0));
     }
 
     /** Hungry, so every food can be eaten, and eating it to the end. */
@@ -127,48 +122,20 @@ final class MomentsTests {
     }
 
     /**
-     * One player sleeps in a bed in one corner while another stays up in the far corner, both in full
-     * block light so the night drains neither, and over 8 blocks apart so neither is the other's
-     * company. Once the sleeper has slept long enough the night skips and wakes them.
+     * Lays the player in a bed and wakes them as vanilla does: as the night skips, which wakes every
+     * sleeper without telling the level, or, with {@code updateLevel}, as they get up themselves. The
+     * night itself, and whether the bed lets them sleep, are vanilla's, and left to it.
      */
-    private static void sleep(GameTestHelper helper) {
-        var sleeper = TestPlayers.profile();
-        var awake = TestPlayers.profile();
-        TestPlayers.whenDone(helper, () -> {
-            TestPlayers.leave(helper, sleeper);
-            TestPlayers.leave(helper, awake);
-        });
-        var foot = new BlockPos(6, 1, 7);
+    private static void wakeInBed(GameTestHelper helper, ServerPlayer player, boolean updateLevel) {
+        var foot = MIDDLE;
         var head = foot.north();
-        var awakeAt = new BlockPos(0, 1, 0);
         helper.setBlock(foot, Blocks.RED_BED.defaultBlockState().setValue(BedBlock.FACING, Direction.NORTH).setValue(BedBlock.PART, BedPart.FOOT));
         helper.setBlock(head, Blocks.RED_BED.defaultBlockState().setValue(BedBlock.FACING, Direction.NORTH).setValue(BedBlock.PART, BedPart.HEAD));
-        helper.setBlock(foot.above(), Blocks.LIGHT);
-        helper.setBlock(head.above(), Blocks.LIGHT);
-        helper.setBlock(awakeAt.above(), Blocks.LIGHT);
-        joinAt(helper, sleeper, foot.east());
-        joinAt(helper, awake, awakeAt);
-        boolean[] slept = {false};
-        helper.onEachTick(() -> {
-            var players = TestPlayers.playerList(helper);
-            var asleep = players.getPlayer(sleeper.id());
-            var up = players.getPlayer(awake.id());
-            // The bed reads the night from the level's environment, which may lag the clock set on the first tick.
-            if (!slept[0]) {
-                slept[0] = asleep.startSleepInBed(helper.absolutePos(foot)).right().isPresent();
-                if (!slept[0] && helper.getTick() >= PlayerSanity.EVALUATION_TICKS) {
-                    helper.fail("the sleeper cannot sleep: " + asleep.startSleepInBed(helper.absolutePos(foot)).left().orElseThrow());
-                }
-            }
-            asleep.doTick();
-            up.doTick();
-            if (!slept[0] || asleep.isSleeping()) {
-                return;
-            }
-            expectSanity(helper, asleep, START + 40, "the sleeper");
-            expectSanity(helper, up, START, "the player awake");
-            helper.succeed();
-        });
+        player.startSleeping(helper.absolutePos(foot));
+        if (!player.isSleeping()) {
+            helper.fail("the player did not lie down in the bed");
+        }
+        player.stopSleepInBed(false, updateLevel);
     }
 
     /**

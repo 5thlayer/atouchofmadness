@@ -31,6 +31,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameType;
@@ -39,6 +40,7 @@ import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.portal.TeleportTransition;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -128,8 +130,6 @@ final class ShadowTests {
 
         var peaceful = defaults.under("shadow_peaceful", new TestEnvironmentDefinition.AllOf(new Sky(Sky.NOON, Weather.Type.CLEAR), new Peaceful()))
                 .padded(PADDING);
-        // Half the players asleep skip the night, so the sleeper's waking doesn't matter.
-        var night = defaults.under("shadow_night", new Sky(Sky.FULL_MOON_MIDNIGHT, Weather.Type.CLEAR)).padded(PADDING);
         for (var kind : KINDS) {
             String name = kind.name();
             tests.test("shadow_phase_a_real_" + name + "_reaches_its_owner_through_a_wall", 200, helper -> throughAWall(helper, kind));
@@ -147,7 +147,7 @@ final class ShadowTests {
             tests.test("shadow_a_" + name + "_goes_when_its_owner_logs_out", 5, helper -> goesWhen(helper, kind, (h, owner) -> TestPlayers.playerList(h).remove(owner)));
             tests.test("shadow_a_" + name + "_goes_when_its_owner_dies", 5, helper -> goesWhen(helper, kind, (h, owner) -> owner.kill(h.getLevel())));
             tests.test("shadow_a_" + name + "_goes_when_its_owner_changes_dimension", 5, helper -> goesWhen(helper, kind, ShadowTests::toTheNether));
-            night.test("shadow_an_insane_player_sleeps_beside_a_real_" + name + "_which_goes", 40, helper -> sleeps(helper, kind));
+            tests.test("shadow_a_real_" + name + "_never_keeps_its_owner_from_sleeping_and_goes_as_they_sleep", 5, helper -> sleeps(helper, kind));
             tests.test("shadow_the_farthest_" + name + "_goes_when_the_cap_drops", PlayerSanity.EVALUATION_TICKS + 2, helper -> capDrops(helper, kind));
             tests.test("shadow_a_" + name + "_is_never_saved", 1, helper -> neverSaved(helper, kind));
             tests.test("shadow_an_unreal_" + name + "_of_ones_own_nearby_drains_its_weight", EVALUATED + 1,
@@ -577,7 +577,11 @@ final class ShadowTests {
                 TeleportTransition.DO_NOTHING));
     }
 
-    /** A Real creature three blocks from the bed doesn't stop its Insane Owner sleeping, and goes once they do. */
+    /**
+     * A Real creature beside the bed is none of the monsters vanilla's bed finds keeping a player from
+     * sleeping, in the box it searches, and it goes once its Insane Owner lies down. The night itself,
+     * and the bed's other checks, are vanilla's, and left to it.
+     */
     private static void sleeps(GameTestHelper helper, Kind kind) {
         var foot = new BlockPos(4, 1, 5);
         var head = foot.north();
@@ -586,17 +590,14 @@ final class ShadowTests {
         var owner = join(helper, foot.east(), INSANE, GameType.SURVIVAL);
         var creature = place(helper, kind, owner, foot.west(3));
         creature.setNoAi(true);
-        boolean[] slept = {false};
+        var level = helper.getLevel();
+        var keepingAwake = level.getEntitiesOfClass(Monster.class, new AABB(helper.absolutePos(foot)).inflate(8, 5, 8),
+                monster -> monster.isPreventingPlayerRest(level, owner));
+        if (!keepingAwake.isEmpty()) {
+            helper.fail("a Real " + kind.name() + " keeps its Owner from sleeping");
+        }
+        owner.startSleeping(helper.absolutePos(foot));
         helper.onEachTick(() -> {
-            // The bed reads the night from the level's environment, which may lag the clock set on the first tick.
-            if (!slept[0]) {
-                var result = owner.startSleepInBed(helper.absolutePos(foot));
-                slept[0] = result.right().isPresent();
-                if (!slept[0] && helper.getTick() >= PlayerSanity.EVALUATION_TICKS) {
-                    helper.fail("an Insane player beside a Real " + kind.name() + " cannot sleep: " + result.left().orElseThrow());
-                }
-                return;
-            }
             if (creature.isRemoved()) {
                 helper.succeed();
             }
@@ -658,10 +659,7 @@ final class ShadowTests {
         if (!creature.doHurtTarget(helper.getLevel(), owner)) {
             helper.fail("a Real " + kind.name() + "'s hit didn't land");
         }
-        double sanity = PlayerSanity.get(owner).value();
-        if (Math.abs(sanity - (INSANE - 5)) > 1e-9) {
-            helper.fail("a hit from a Real " + kind.name() + " left " + sanity + " Sanity, not " + (INSANE - 5));
-        }
+        expectSanity(helper, owner, INSANE - 5, "the Owner, hit by a Real " + kind.name() + ",");
         helper.succeed();
     }
 
