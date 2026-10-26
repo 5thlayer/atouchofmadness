@@ -89,6 +89,14 @@ public final class PlayerSanity {
         }
     }
 
+    /** Stores a new player's start value as they join, so a later change to the config's start leaves them be. */
+    @SubscribeEvent
+    static void join(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            set(player, get(player));
+        }
+    }
+
     @SubscribeEvent
     static void respawn(PlayerEvent.Clone event) {
         if (event.isWasDeath() && event.getEntity() instanceof ServerPlayer player) {
