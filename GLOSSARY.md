@@ -116,6 +116,12 @@ The Shadow Creature that comes only when Sanity is nearly gone: fast, fragile, h
 The mob a Shadow Creature is drawn as, taken from the monsters of the biome it appears in; a Shape changes the look, never the Lurker's or the Gaunt's behaviour.
 _Avoid_: skin, disguise, variant
 
+### Discovery
+
+**Discovery**:
+A player's own learning of one thing of the Pillar's, such as Low light, Company, a Stale disc or the Flower Crown, the first time it actually changes their Sanity, or for a stage the first time they reach it; until then the Pillar shows nothing of what that thing does. Never shared between players. The Sanity meter itself is never discovered: it shows from the start.
+_Avoid_: unlock, research, knowledge
+
 ### Dev runs
 
 **Game-test pack**:
