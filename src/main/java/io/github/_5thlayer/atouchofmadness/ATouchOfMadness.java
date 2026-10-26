@@ -7,7 +7,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 
 /**
- * The Module's entry point. It fills its part of the suite's Works tab. The game tests hook
+ * The Pillar's entry point. It registers the Pillar's own creative tab. The game tests hook
  * themselves in from the {@code gametest} source set, which never ships (libworks ADR 0011).
  */
 @Mod(ATouchOfMadness.MOD_ID)
@@ -17,6 +17,6 @@ public final class ATouchOfMadness {
     public static final String MOD_ID = "atouchofmadness";
 
     public ATouchOfMadness(IEventBus modBus) {
-        modBus.addListener(WorksTabContents::add);
+        MadnessTab.register(modBus);
     }
 }
