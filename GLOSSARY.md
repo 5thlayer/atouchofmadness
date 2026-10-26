@@ -101,10 +101,10 @@ The one player a Shadow Creature exists for and hunts; besides the Owner, only a
 
 **Unreal**:
 The state of a Shadow Creature whose Owner is Uneasy: it can neither harm nor be harmed, and fades when approached or struck.
-_Avoid_: Hallucination (never a mob), fake, ghost
+_Avoid_: Hallucination (never a mob), fake, ghost, shade
 
 **Real**:
-The state of a Shadow Creature whose Owner is Insane: it attacks, can be killed, and leaves Umbra.
+The state of a Shadow Creature whose Owner is Insane: it attacks, can be killed by a player who can hit it, which restores that player's Sanity, and leaves Umbra.
 
 **Lurker**:
 The Shadow Creature of every low stage: slow and tough. Like the Gaunt, it drifts through blocks.
