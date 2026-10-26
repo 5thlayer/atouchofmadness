@@ -58,10 +58,10 @@ final class MomentsTests {
         // The game-test pack overrides the cookie's +3 with -2.
         tests.test("moments_a_datapack_overrides_a_food", MAX_TICKS, helper -> expectEating(helper, new ItemStack(Items.COOKIE), -2));
         tests.test("moments_each_slice_of_a_placed_cake_restores_five", 1, MomentsTests::cake);
-        tests.test("moments_breaking_a_flower_restores_one", 1, helper -> expect(helper, player -> {
+        tests.test("moments_breaking_a_flower_restores_one", 1, helper -> expectAtOnce(helper, player -> {
             helper.setBlock(MIDDLE, Blocks.POPPY);
             player.gameMode.destroyBlock(helper.absolutePos(MIDDLE));
-        }, player -> true, 1));
+        }, 1));
         tests.test("moments_breaking_a_flower_grown_with_bone_meal_restores_one", 1, MomentsTests::boneMealFlower);
         tests.test("moments_daylight_restores_nothing", 2 * PlayerSanity.EVALUATION_TICKS + 1, helper -> {
             int readAt = 2 * PlayerSanity.EVALUATION_TICKS;
@@ -95,7 +95,7 @@ final class MomentsTests {
 
     /** Two slices, each eaten hungry from the block in the world, empty-handed. */
     private static void cake(GameTestHelper helper) {
-        expect(helper, player -> {
+        expectAtOnce(helper, player -> {
             helper.setBlock(MIDDLE, Blocks.CAKE);
             var pos = helper.absolutePos(MIDDLE);
             for (int slice = 0; slice < 2; slice++) {
@@ -107,12 +107,12 @@ final class MomentsTests {
             if (bites != 2) {
                 helper.fail("the cake has " + bites + " bites taken, not 2");
             }
-        }, player -> true, 10);
+        }, 10);
     }
 
     /** A torchflower crop on wet farmland, bone-mealed until it is a torchflower, then broken. */
     private static void boneMealFlower(GameTestHelper helper) {
-        expect(helper, player -> {
+        expectAtOnce(helper, player -> {
             helper.setBlock(MIDDLE.below(), Blocks.FARMLAND.defaultBlockState().setValue(FarmlandBlock.MOISTURE, FarmlandBlock.MAX_MOISTURE));
             helper.setBlock(MIDDLE, Blocks.TORCHFLOWER_CROP);
             var pos = helper.absolutePos(MIDDLE);
@@ -123,7 +123,7 @@ final class MomentsTests {
                 helper.fail("bone meal grew " + helper.getBlockState(MIDDLE) + ", not a torchflower");
             }
             player.gameMode.destroyBlock(pos);
-        }, player -> true, 1);
+        }, 1);
     }
 
     /**
@@ -184,6 +184,11 @@ final class MomentsTests {
             expectSanity(helper, player, START + moved, "the player");
             helper.succeed();
         });
+    }
+
+    /** As {@link #expect}, with Sanity read on the first tick after {@code act}. */
+    private static void expectAtOnce(GameTestHelper helper, Consumer<ServerPlayer> act, double moved) {
+        expect(helper, act, player -> true, moved);
     }
 
     private static ServerPlayer joinAt(GameTestHelper helper, GameProfile profile, BlockPos feet) {

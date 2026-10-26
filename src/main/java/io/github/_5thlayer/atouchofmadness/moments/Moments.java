@@ -7,6 +7,8 @@ import com.mojang.serialization.Codec;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
@@ -57,7 +59,7 @@ public final class Moments {
 
     private static void ate(LivingEntityUseItemEvent.Finish event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            applyModifier(player, event.getItem().getItem());
+            applyModifier(player, event.getItem().typeHolder());
         }
     }
 
@@ -75,15 +77,15 @@ public final class Moments {
         }
         var stat = event.getStat();
         if (stat.getType() == Stats.CUSTOM && Stats.EAT_CAKE_SLICE.equals(stat.getValue())) {
-            applyModifier(player, Items.CAKE);
+            applyModifier(player, BuiltInRegistries.ITEM.wrapAsHolder(Items.CAKE));
         } else if (stat.getType() == Stats.BLOCK_MINED && stat.getValue() instanceof Block block
-                && block.builtInRegistryHolder().is(BlockTags.FLOWERS)) {
+                && block.defaultBlockState().is(BlockTags.FLOWERS)) {
             PlayerSanity.add(player, rules.flower());
         }
     }
 
-    private static void applyModifier(ServerPlayer player, Item item) {
-        Integer modifier = item.builtInRegistryHolder().getData(SANITY_MODIFIER);
+    private static void applyModifier(ServerPlayer player, Holder<Item> item) {
+        Integer modifier = item.getData(SANITY_MODIFIER);
         if (modifier != null && modifier != 0) {
             PlayerSanity.add(player, modifier);
         }

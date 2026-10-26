@@ -13,8 +13,8 @@ import net.neoforged.fml.config.ModConfig;
 
 /**
  * The Pillar's entry point. It registers the Pillar's own creative tab, each player's Sanity, the
- * drains of where they stand, the moments that move it at once and the common config. The game tests hook themselves in from the
- * {@code gametest} source set, which never ships (libworks ADR 0011).
+ * drains of where they stand, the moments that move it at once and the common config. The game
+ * tests hook themselves in from the {@code gametest} source set, which never ships (libworks ADR 0011).
  */
 @Mod(ATouchOfMadness.MOD_ID)
 public final class ATouchOfMadness {
