@@ -50,7 +50,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
  * sent only to its Owner and Insane players, who alone can hit it, even one standing still as their
  * Stage changes; Unreal while the Owner is Uneasy,
  * harming and harmed by nothing, fading when approached or struck; Real while they are Insane,
- * hunting and killable, dropping Umbra, still on Peaceful. It goes with its Owner's logout, death,
+ * hunting and killable, drifting through walls, landing no hit from inside a block, dropping Umbra, still on Peaceful. It goes with its Owner's logout, death,
  * change of dimension and sleep, and when their cap drops, never stops them sleeping, and is never
  * saved. Its Owner's own nearby drain 2/min for a Lurker and 4 for a Gaunt, twice that while Real; a
  * Real one's hit takes 5; carrying Umbra drains 1/min. Each shared rule is one body run for the
@@ -116,7 +116,6 @@ final class ShadowTests {
                 .test("shadow_a_pack_keeps_them_out_of_a_dimension_type_it_leaves_out", 1, ShadowTests::pack);
 
         var tests = defaults.padded(PADDING);
-        tests.test("shadow_a_real_gaunt_flies_over_a_wall_to_its_owner", 200, ShadowTests::overAWall);
         tests.test("discovery_an_own_shadow_creature_nearby_discovers_it", EVALUATED + 1, ShadowTests::discoverCreature);
         tests.test("discovery_a_hit_from_a_real_shadow_creature_discovers_the_strike", 1, ShadowTests::discoverStrike);
         tests.test("discovery_carrying_umbra_discovers_it", EVALUATED + 1, ShadowTests::discoverUmbra);
@@ -128,6 +127,9 @@ final class ShadowTests {
         var night = defaults.under("shadow_night", new Sky(Sky.FULL_MOON_MIDNIGHT, Weather.Type.CLEAR)).padded(PADDING);
         for (var kind : KINDS) {
             String name = kind.name();
+            tests.test("shadow_phase_a_real_" + name + "_reaches_its_owner_through_a_wall", 200, helper -> throughAWall(helper, kind));
+            tests.test("shadow_phase_a_" + name + "_inside_a_block_is_unharmed_and_lands_no_hit", PlayerSanity.EVALUATION_TICKS + 1,
+                    helper -> insideABlock(helper, kind));
             tests.test("shadow_a_real_" + name + "_drops_its_umbra", 1, helper -> drops(helper, kind));
             tests.test("shadow_a_" + name + "_is_sent_to_its_owner_and_the_insane_and_only_they_hit_it", 1, helper -> sentTo(helper, kind));
             tests.test("shadow_an_unreal_" + name + "_takes_and_deals_no_harm_and_fades_when_struck", ShadowCreature.FADE_TICKS + 5,
@@ -276,19 +278,47 @@ final class ShadowTests {
 
     // A Real creature.
 
-    /** A wall across the platform, two high under its three-high room: the Gaunt, on the far side, flies over it to strike. */
-    private static void overAWall(GameTestHelper helper) {
-        for (int z = 0; z <= 8; z++) {
-            helper.setBlock(new BlockPos(4, 1, z), Blocks.STONE);
-            helper.setBlock(new BlockPos(4, 2, z), Blocks.STONE);
+    /** A wall across the platform, floor to ceiling: the creature, on the far side, drifts through it to strike. */
+    private static void throughAWall(GameTestHelper helper, Kind kind) {
+        for (int y = 1; y <= 4; y++) {
+            for (int z = 0; z <= 8; z++) {
+                helper.setBlock(new BlockPos(4, y, z), Blocks.STONE);
+            }
         }
         var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
-        place(helper, GAUNT, owner, new BlockPos(7, 1, 4));
+        place(helper, kind, owner, new BlockPos(7, 1, 4));
         float health = owner.getHealth();
         helper.onEachTick(() -> {
             if (owner.getHealth() < health) {
                 helper.succeed();
             }
+        });
+    }
+
+    /**
+     * A Real creature in a stone pillar beside its Owner: a second in, it is unharmed and its hit lands
+     * nowhere; with the pillar gone, its hit lands.
+     */
+    private static void insideABlock(GameTestHelper helper, Kind kind) {
+        var at = new BlockPos(2, 1, 4);
+        helper.setBlock(at, Blocks.STONE);
+        helper.setBlock(at.above(), Blocks.STONE);
+        var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
+        var creature = place(helper, kind, owner, at);
+        creature.setNoAi(true);
+        helper.runAtTickTime(PlayerSanity.EVALUATION_TICKS, () -> {
+            if (creature.getHealth() < creature.getMaxHealth()) {
+                helper.fail("a " + kind.name() + " inside a block was harmed");
+            }
+            if (!creature.isInsideBlocks() || creature.doHurtTarget(helper.getLevel(), owner)) {
+                helper.fail("a " + kind.name() + " inside a block landed a hit");
+            }
+            helper.setBlock(at, Blocks.AIR);
+            helper.setBlock(at.above(), Blocks.AIR);
+            if (!creature.doHurtTarget(helper.getLevel(), owner)) {
+                helper.fail("a " + kind.name() + " clear of the pillar landed no hit");
+            }
+            helper.succeed();
         });
     }
 

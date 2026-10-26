@@ -61,9 +61,6 @@ public final class ShadowCreatures {
 
     public static final DeferredItem<Item> UMBRA = ITEMS.registerSimpleItem("umbra");
 
-    /** How far a creature can track its Owner, in blocks: beyond the farthest it spawns. */
-    private static final double FOLLOW_RANGE = 48;
-
     /** The config's rules, swapped whole when it loads or reloads, possibly off the server thread. */
     private static volatile ShadowRules rules = ShadowRules.DEFAULT;
 
@@ -140,12 +137,12 @@ public final class ShadowCreatures {
 
     private static void attributes(EntityAttributeCreationEvent event) {
         event.put(LURKER.get(), creatureAttributes().build());
-        event.put(GAUNT.get(), creatureAttributes().add(Attributes.FLYING_SPEED).build());
+        event.put(GAUNT.get(), creatureAttributes().build());
     }
 
     /** The attributes each creature has; it sets its stats from the config as it is made. */
     private static AttributeSupplier.Builder creatureAttributes() {
-        return Mob.createMobAttributes().add(Attributes.ATTACK_DAMAGE).add(Attributes.FOLLOW_RANGE, FOLLOW_RANGE);
+        return Mob.createMobAttributes().add(Attributes.ATTACK_DAMAGE);
     }
 
     private static void configChanged(ModConfigEvent event) {

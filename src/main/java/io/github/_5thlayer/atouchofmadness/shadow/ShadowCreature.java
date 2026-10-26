@@ -17,18 +17,24 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.goal.Goal;
-import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
+import net.minecraft.world.entity.ai.control.MoveControl;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 /**
  * A Shadow Creature (ADR 0002): one server mob with one Owner, sent only to its Owner and to Insane
- * players, and only they can hit it. While the Owner is Uneasy it is Unreal: it stalks them at the edge
+ * players, and only they can hit it. It drifts through blocks as a vex does, with no gravity, straight
+ * toward where it is going at its drift speed, and lands a hit only while its body is clear of solid
+ * blocks. While the Owner is Uneasy it is Unreal: it stalks them at the edge
  * of sight, takes and deals no harm, collides with nothing, and fades once they come within the fade
  * distance or strike it. While they are Insane it is Real: it hunts them, can be killed, and each of its
  * hits takes the strike from their Sanity. It is never saved, and vanishes as soon as its Owner is
@@ -43,19 +49,28 @@ public abstract class ShadowCreature extends PathfinderMob {
     /** Unreal creatures stalk their Owner from no nearer than this, in blocks, and close in from beyond it. */
     private static final double STALK_DISTANCE = 12;
 
+    /** How many ticks apart a Real creature's hits come. */
+    private static final int ATTACK_TICKS = 20;
+
+    /** How far into a block a creature's body may reach and still count as clear of it, as it grazes a floor. */
+    private static final double GRAZE = 0.1;
+
     private static final EntityDataAccessor<Boolean> DATA_REAL = SynchedEntityData.defineId(ShadowCreature.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> DATA_FADING = SynchedEntityData.defineId(ShadowCreature.class, EntityDataSerializers.BOOLEAN);
 
     private @Nullable UUID owner;
     private int fadeTicks;
+    /** How far it drifts a tick, in blocks. */
+    private final double drift;
 
     protected ShadowCreature(EntityType<? extends ShadowCreature> type, Level level, Function<ShadowRules, ShadowRules.Stats> stats) {
         super(type, level);
         var own = stats.apply(ShadowCreatures.rules());
         getAttribute(Attributes.MAX_HEALTH).setBaseValue(own.health());
         getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(own.damage());
-        getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(own.speed());
         setHealth(getMaxHealth());
+        drift = own.speed() / 20;
+        moveControl = new DriftControl();
     }
 
     @Override
@@ -67,7 +82,7 @@ public abstract class ShadowCreature extends PathfinderMob {
 
     @Override
     protected void registerGoals() {
-        goalSelector.addGoal(1, new MeleeAttackGoal(this, 1, true));
+        goalSelector.addGoal(1, new HuntGoal());
         goalSelector.addGoal(2, new StalkGoal());
     }
 
@@ -137,7 +152,11 @@ public abstract class ShadowCreature extends PathfinderMob {
 
     @Override
     public void tick() {
+        // As a vex does: no block stops it, and none suffocates it.
+        noPhysics = true;
         super.tick();
+        noPhysics = false;
+        setNoGravity(true);
         if (isFading() && ++fadeTicks >= FADE_TICKS && !level().isClientSide()) {
             discard();
         }
@@ -185,10 +204,13 @@ public abstract class ShadowCreature extends PathfinderMob {
         return super.hurtServer(level, source, damage);
     }
 
-    /** Only a Real creature attacks, and each hit it lands on a player takes the strike from their Sanity. */
+    /**
+     * Only a Real creature attacks, and only from clear of solid blocks; each hit it lands on a player
+     * takes the strike from their Sanity.
+     */
     @Override
     public boolean doHurtTarget(ServerLevel level, Entity target) {
-        if (isHarmless()) {
+        if (isHarmless() || isInsideBlocks()) {
             return false;
         }
         boolean hurt = super.doHurtTarget(level, target);
@@ -196,6 +218,18 @@ public abstract class ShadowCreature extends PathfinderMob {
             PlayerSanity.add(player, -ShadowCreatures.rules().strike(), Cause.SHADOW_STRIKE);
         }
         return hurt;
+    }
+
+    /** Whether its body is in a solid block, more than grazing one. */
+    public boolean isInsideBlocks() {
+        return !level().noBlockCollision(this, getBoundingBox().deflate(GRAZE));
+    }
+
+    /** Moves by its own momentum alone, which its drift sets, through blocks and with no gravity. */
+    @Override
+    public void travel(Vec3 input) {
+        move(MoverType.SELF, getDeltaMovement());
+        setDeltaMovement(getDeltaMovement().scale(DriftControl.SLOWING));
     }
 
     @Override
@@ -266,17 +300,94 @@ public abstract class ShadowCreature extends PathfinderMob {
             }
             getLookControl().setLookAt(player, 30, 30);
             if (distanceToSqr(player) > STALK_DISTANCE * STALK_DISTANCE) {
-                if (getNavigation().isDone()) {
-                    getNavigation().moveTo(player, 1);
-                }
+                getMoveControl().setWantedPosition(player.getX(), player.getY(), player.getZ(), 1);
             } else {
-                getNavigation().stop();
+                ((DriftControl) getMoveControl()).stop();
             }
         }
 
         @Override
         public void stop() {
-            getNavigation().stop();
+            ((DriftControl) getMoveControl()).stop();
+        }
+    }
+
+    /** While Real, drifts straight at its Owner, its target, and strikes whenever in reach. */
+    private final class HuntGoal extends Goal {
+
+        private int cooldown;
+
+        HuntGoal() {
+            setFlags(EnumSet.of(Goal.Flag.MOVE, Goal.Flag.LOOK));
+        }
+
+        @Override
+        public boolean canUse() {
+            return getTarget() != null && getTarget().isAlive();
+        }
+
+        @Override
+        public boolean requiresUpdateEveryTick() {
+            return true;
+        }
+
+        @Override
+        public void start() {
+            setAggressive(true);
+        }
+
+        @Override
+        public void tick() {
+            var target = getTarget();
+            if (target == null) {
+                return;
+            }
+            getLookControl().setLookAt(target, 30, 30);
+            getMoveControl().setWantedPosition(target.getX(), target.getY(), target.getZ(), 1);
+            if (--cooldown <= 0 && isWithinMeleeAttackRange(target) && level() instanceof ServerLevel level && doHurtTarget(level, target)) {
+                swing(InteractionHand.MAIN_HAND);
+                cooldown = ATTACK_TICKS;
+            }
+        }
+
+        @Override
+        public void stop() {
+            setAggressive(false);
+            ((DriftControl) getMoveControl()).stop();
+        }
+    }
+
+    /** Sets its momentum straight toward where it is wanted, at its drift, through whatever is between. */
+    private final class DriftControl extends MoveControl {
+
+        /** How much of its momentum it keeps from one tick to the next, once it stops being driven. */
+        static final double SLOWING = 0.6;
+
+        /** Nearer than this, in blocks, it has arrived. */
+        private static final double ARRIVED = 0.3;
+
+        DriftControl() {
+            super(ShadowCreature.this);
+        }
+
+        void stop() {
+            operation = Operation.WAIT;
+        }
+
+        @Override
+        public void tick() {
+            if (operation != Operation.MOVE_TO) {
+                return;
+            }
+            var toward = new Vec3(wantedX - getX(), wantedY - getY(), wantedZ - getZ());
+            double length = toward.length();
+            if (length < ARRIVED) {
+                operation = Operation.WAIT;
+                return;
+            }
+            setDeltaMovement(toward.scale(Math.min(drift * speedModifier, length) / length));
+            setYRot((float) (Mth.atan2(toward.z, toward.x) * Mth.RAD_TO_DEG) - 90);
+            yBodyRot = getYRot();
         }
     }
 }

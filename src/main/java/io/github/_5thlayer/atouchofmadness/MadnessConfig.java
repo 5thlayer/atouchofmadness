@@ -181,20 +181,20 @@ public final class MadnessConfig {
             .defineInRange("umbra", ShadowRules.DEFAULT.umbra(), 0, Sanity.MAX);
 
     private static final Stats LURKER = Stats.define("lurker", "The Lurker's stats; a change applies to Lurkers that come after it.",
-            ShadowRules.DEFAULT.lurker(), "Its movement speed.");
+            ShadowRules.DEFAULT.lurker());
 
     private static final Stats GAUNT = Stats.define("gaunt", "The Gaunt's stats; a change applies to Gaunts that come after it.",
-            ShadowRules.DEFAULT.gaunt(), "Its flying speed; it walks at half this.");
+            ShadowRules.DEFAULT.gaunt());
 
-    /** A creature's health, attack damage and speed, in a section of their own. */
+    /** A creature's health, attack damage and drift speed, in a section of their own. */
     private record Stats(ModConfigSpec.DoubleValue health, ModConfigSpec.DoubleValue damage, ModConfigSpec.DoubleValue speed) {
 
-        static Stats define(String name, String comment, ShadowRules.Stats defaults, String speedComment) {
+        static Stats define(String name, String comment, ShadowRules.Stats defaults) {
             BUILDER.comment(comment).push(name);
             var stats = new Stats(
                     BUILDER.comment("Its health.").defineInRange("health", defaults.health(), 1, 1024),
                     BUILDER.comment("The damage of each of its hits, before vanilla scales it by difficulty.").defineInRange("damage", defaults.damage(), 0, 1024),
-                    BUILDER.comment(speedComment).defineInRange("speed", defaults.speed(), 0, 10));
+                    BUILDER.comment("How fast it drifts, through blocks and all, in blocks a second.").defineInRange("drift", defaults.speed(), 0, 40));
             BUILDER.pop();
             return stats;
         }

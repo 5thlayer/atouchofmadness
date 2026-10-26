@@ -17,18 +17,18 @@ import java.util.List;
 public record ShadowRules(List<Double> caps, int intervalTicks, double minDistance, double maxDistance, double fadeDistance,
         double gauntBelow, double gauntChance, double realFactor, double strike, double umbra, Stats lurker, Stats gaunt) {
 
-    /** A creature's health, attack damage and movement speed, its flying speed for one that flies. */
+    /** A creature's health, attack damage, and speed, how fast it drifts in blocks a second. */
     public record Stats(double health, double damage, double speed) {
     }
 
     /**
      * The defaults: a cap of 1 at 50, 2 at 35, 3 at 20 and 4 at 10; an attempt every 20 s, 12 to 24
      * blocks away; a Gaunt half the time below 10; fading within 4 blocks; a Real creature draining
-     * twice its weight, a hit taking 5 and Umbra 1 a minute. A Lurker has 30 health and deals 4, a
-     * Gaunt 16 and 7.
+     * twice its weight, a hit taking 5 and Umbra 1 a minute. A Lurker has 30 health, deals 4 and
+     * drifts 2.5 blocks a second; a Gaunt 16, 7 and 5.
      */
     public static final ShadowRules DEFAULT = new ShadowRules(List.of(50.0, 35.0, 20.0, 10.0), 20 * 20, 12, 24, 4,
-            10, 0.5, 2, 5, 1, new Stats(30, 4, 0.2), new Stats(16, 7, 0.3));
+            10, 0.5, 2, 5, 1, new Stats(30, 4, 2.5), new Stats(16, 7, 5));
 
     public ShadowRules {
         caps = List.copyOf(caps);
