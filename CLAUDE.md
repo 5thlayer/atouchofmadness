@@ -29,6 +29,10 @@ Conventional commits: `<type>(<optional scope>): <summary>`, with the summary in
 - A new game test class is registered by a line in `ATouchOfMadnessGameTests.registerTests`, and its tests stand on the `gametest/platform` structure that the plugin's `buildGametestStructures` task writes into `src/gametest/resources`.
 - `DevPacks` switches on `gametest_pack/` in the game tests and `dev_pack/` in the dev client, the datapacks that stand in for what a pack would fill.
 - Packs a test switches on itself, such as one per batch, go under `gametest_packs/<name>/`.
+- A continuous drain or restore is tested by asserting `PlayerSanity.netRate` with only that source active, never by waiting for Sanity to move: how Sanity moves by the Net rate is tested once, in `SanityTests`.
+- Common config keys aren't game-tested; review checks them.
+- Each data mechanism (a tag, a data map) gets one datapack override test, in the slice that introduces it, not one per ticket that reads it.
+- Each ticket names its game tests' prefix, shared by its whole slice.
 
 ### The dev client
 
