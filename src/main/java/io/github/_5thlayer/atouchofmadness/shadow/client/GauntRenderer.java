@@ -20,14 +20,14 @@ import org.jspecify.annotations.Nullable;
 final class GauntRenderer extends MobRenderer<Gaunt, GauntRenderer.State, VexModel> {
 
     private static final Identifier TEXTURE = ShadowRenderers.texture("gaunt");
-    private static final float SCALE = 1.2F;
+    private static final float SCALE = 1.75F;
 
     static final class State extends VexRenderState {
         int tint = -1;
     }
 
     GauntRenderer(EntityRendererProvider.Context context) {
-        super(context, new VexModel(context.bakeLayer(ModelLayers.VEX)), 0.4F);
+        super(context, new VexModel(context.bakeLayer(ModelLayers.VEX)), 0.6F);
     }
 
     @Override

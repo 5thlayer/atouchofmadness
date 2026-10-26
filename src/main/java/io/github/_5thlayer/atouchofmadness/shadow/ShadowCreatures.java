@@ -57,7 +57,7 @@ public final class ShadowCreatures {
     public static final DeferredHolder<EntityType<?>, EntityType<Lurker>> LURKER = ENTITIES.registerEntityType("lurker", Lurker::new,
             MobCategory.MISC, builder -> builder.sized(0.6F, 1.95F).eyeHeight(1.74F).clientTrackingRange(8).noSave());
     public static final DeferredHolder<EntityType<?>, EntityType<Gaunt>> GAUNT = ENTITIES.registerEntityType("gaunt", Gaunt::new,
-            MobCategory.MISC, builder -> builder.sized(0.6F, 0.9F).eyeHeight(0.6F).clientTrackingRange(8).noSave());
+            MobCategory.MISC, builder -> builder.sized(0.9F, 1.4F).eyeHeight(1.0F).clientTrackingRange(8).noSave());
 
     public static final DeferredItem<Item> UMBRA = ITEMS.registerSimpleItem("umbra");
 

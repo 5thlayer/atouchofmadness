@@ -28,7 +28,7 @@ public record ShadowRules(List<Double> caps, int intervalTicks, double minDistan
      * Gaunt 16 and 7.
      */
     public static final ShadowRules DEFAULT = new ShadowRules(List.of(50.0, 35.0, 20.0, 10.0), 20 * 20, 12, 24, 4,
-            10, 0.5, 2, 5, 1, new Stats(30, 4, 0.2), new Stats(16, 7, 0.6));
+            10, 0.5, 2, 5, 1, new Stats(30, 4, 0.2), new Stats(16, 7, 0.3));
 
     public ShadowRules {
         caps = List.copyOf(caps);
