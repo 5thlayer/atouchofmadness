@@ -27,6 +27,7 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition.Weather;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
@@ -52,11 +53,11 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
  * sent only to its Owner and Insane players, who alone can hit it, even one standing still as their
  * Stage changes; Unreal while the Owner is Uneasy, harming and harmed by nothing, fading when
  * approached or struck; Real while they are Insane, hunting and killable, drifting through walls,
- * landing no hit from inside a block but coming out beside its Owner to strike, dropping Umbra, still
- * on Peaceful. It goes with its Owner's logout, death, change of dimension and sleep, and when their
- * cap drops, never stops them sleeping, and is never saved. Its Owner's own nearby drain 2/min for a
- * Lurker and 4 for a Gaunt, twice that while Real; a Real one's hit takes 5; carrying Umbra drains
- * 1/min. Each shared rule is one body run for the Lurker and the Gaunt in turn, as two tests.
+ * landing no hit from inside a block but coming out beside its Owner to strike, dropping Umbra only
+ * to a player's kill, still on Peaceful. It goes with its Owner's logout, death, change of dimension
+ * and sleep, and when their cap drops, never stops them sleeping, and is never saved. Its Owner's
+ * own nearby drain 2/min for a Lurker and 4 for a Gaunt, twice that while Real; a Real one's hit
+ * takes 5; carrying Umbra drains 1/min. Each shared rule is one body run for the Lurker and the Gaunt in turn, as two tests.
  *
  * <p>The game-test server turns {@code doMobSpawning} off, so no attempt comes but those a test makes
  * through {@link ShadowSpawner#attempt}. Each test joins players of its own and logs them out however
@@ -164,6 +165,9 @@ final class ShadowTests {
             tests.test("shadow_kill_an_unreal_" + name + "_fading_restores_nothing", ShadowCreature.FADE_TICKS + 5,
                     helper -> fadesForNothing(helper, kind));
             tests.test("shadow_kill_a_real_" + name + "_vanishing_restores_nothing", 5, helper -> vanishesForNothing(helper, kind));
+            tests.test("shadow_umbra_a_real_" + name + "_shot_by_its_owner_drops_it", 1, helper -> shotForUmbra(helper, kind));
+            tests.test("shadow_umbra_a_real_" + name + "_dying_of_no_player_drops_none", 1, helper -> diesOfNoPlayerForNoUmbra(helper, kind));
+            tests.test("shadow_umbra_an_unreal_" + name + "_killed_drops_none", 1, helper -> unrealKilled(helper, kind));
         }
     }
 
@@ -384,10 +388,7 @@ final class ShadowTests {
             PlayerSanity.set(owner, new Sanity(INSANE));
             var creature = place(helper, kind, owner, new BlockPos(5, 1, 4));
             creature.hurtServer(helper.getLevel(), owner.damageSources().playerAttack(owner), 1000);
-            int umbra = takeUmbra(helper);
-            if (umbra < kind.minUmbra() || umbra > kind.maxUmbra()) {
-                helper.fail("a Real " + kind.name() + " dropped " + umbra + " Umbra, not " + kind.minUmbra() + " to " + kind.maxUmbra());
-            }
+            expectUmbra(helper, kind.minUmbra(), kind.maxUmbra(), "a Real " + kind.name());
         }
         helper.succeed();
     }
@@ -402,6 +403,57 @@ final class ShadowTests {
             item.discard();
         }
         return umbra;
+    }
+
+    /** Takes the dropped Umbra, which must come to between {@code min} and {@code max}. */
+    private static void expectUmbra(GameTestHelper helper, int min, int max, String what) {
+        int umbra = takeUmbra(helper);
+        if (umbra < min || umbra > max) {
+            helper.fail(what + " dropped " + umbra + " Umbra, not " + min + " to " + max);
+        }
+    }
+
+    /** Deaths with no player behind them: {@code /kill}, the void, lava and an untamed wolf's bite. */
+    private static List<DamageSource> noPlayersDamage(GameTestHelper helper) {
+        var sources = helper.getLevel().damageSources();
+        var wolf = EntityType.WOLF.create(helper.getLevel(), EntitySpawnReason.EVENT);
+        return List.of(sources.genericKill(), sources.fellOutOfWorld(), sources.lava(), sources.mobAttack(wolf));
+    }
+
+    /** An arrow its Owner shot is a player's kill, so it drops Umbra. */
+    private static void shotForUmbra(GameTestHelper helper, Kind kind) {
+        var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
+        var creature = place(helper, kind, owner, new BlockPos(5, 1, 4));
+        var arrow = EntityType.ARROW.create(helper.getLevel(), EntitySpawnReason.EVENT);
+        creature.hurtServer(helper.getLevel(), owner.damageSources().arrow(arrow, owner), 1000);
+        expectUmbra(helper, kind.minUmbra(), kind.maxUmbra(), "a Real " + kind.name() + " shot by its Owner");
+        helper.succeed();
+    }
+
+    /** Each death with no player behind it kills one, beside its Owner, and none leaves Umbra. */
+    private static void diesOfNoPlayerForNoUmbra(GameTestHelper helper, Kind kind) {
+        var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
+        for (var source : noPlayersDamage(helper)) {
+            var creature = place(helper, kind, owner, new BlockPos(5, 1, 4));
+            creature.hurtServer(helper.getLevel(), source, 1000);
+            if (!creature.isDeadOrDying()) {
+                helper.fail("a Real " + kind.name() + " survived " + source.getMsgId() + ": the fixture tests nothing");
+            }
+            expectUmbra(helper, 0, 0, "a Real " + kind.name() + " killed by " + source.getMsgId());
+        }
+        helper.succeed();
+    }
+
+    /** {@code /kill} reaches past an Unreal one's harmlessness, and leaves no Umbra. */
+    private static void unrealKilled(GameTestHelper helper, Kind kind) {
+        var owner = join(helper, new BlockPos(1, 1, 4), UNEASY, GameType.SURVIVAL);
+        var creature = place(helper, kind, owner, new BlockPos(5, 1, 4));
+        creature.kill(helper.getLevel());
+        if (!creature.isDeadOrDying()) {
+            helper.fail("an Unreal " + kind.name() + " survived /kill: the fixture tests nothing");
+        }
+        expectUmbra(helper, 0, 0, "an Unreal " + kind.name() + " killed by /kill");
+        helper.succeed();
     }
 
     /** The Owner and an Insane player are sent it and a Sane one isn't; while it is Real, the Sane one's hit does nothing and the Insane one's harms it. */
@@ -693,14 +745,12 @@ final class ShadowTests {
         helper.succeed();
     }
 
-    /** {@code /kill}'s damage and a wolf's bite each kill one, and its Owner, beside it, gains nothing. */
+    /** Each death with no player behind it kills one, and its Owner, beside it, gains nothing. */
     private static void diesOfNoPlayer(GameTestHelper helper, Kind kind) {
         var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
-        var wolf = EntityType.WOLF.create(helper.getLevel(), EntitySpawnReason.EVENT);
-        var level = helper.getLevel();
-        for (var source : List.of(level.damageSources().genericKill(), level.damageSources().mobAttack(wolf))) {
+        for (var source : noPlayersDamage(helper)) {
             var creature = place(helper, kind, owner, new BlockPos(5, 1, 4));
-            creature.hurtServer(level, source, 1000);
+            creature.hurtServer(helper.getLevel(), source, 1000);
             if (!creature.isDeadOrDying()) {
                 helper.fail("a Real " + kind.name() + " survived " + source.getMsgId() + ": the fixture tests nothing");
             }
