@@ -37,7 +37,7 @@ A drain that takes a fixed amount of Sanity at once, such as being struck by the
 _Avoid_: event drain, lump
 
 **Low light**:
-Light at a player's eyes too dim for their peace of mind, a brighter line than the Dark's; a night with a full moon under open sky never counts (ADR 0003).
+Light at a player's eyes too dim for their peace of mind, a brighter line than the Dark's; a night with a full moon under open sky never counts, in a dimension with a moon (ADR 0003).
 _Avoid_: the Dark (A Touch of Darkness's state), darkness
 
 **Restore**:

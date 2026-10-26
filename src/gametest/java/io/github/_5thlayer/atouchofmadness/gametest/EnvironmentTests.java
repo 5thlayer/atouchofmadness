@@ -22,7 +22,8 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * The drains of where a player stands: Low light below 5 at the eyes, with a full moon in a sky the
- * eyes can see as a relief (ADR 0003), freezing, being wet, and an unsettling dimension. Each test sets up its
+ * eyes can see as a relief in a dimension with a moon (ADR 0003), freezing, being wet, and an
+ * unsettling dimension. Each test sets up its
  * condition, stands a player in it with no other source active, ticks them past an evaluation once the
  * light has settled, and reads the Net rate against the per-minute figure.
  */
