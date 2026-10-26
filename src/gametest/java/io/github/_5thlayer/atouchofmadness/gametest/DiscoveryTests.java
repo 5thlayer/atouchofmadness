@@ -15,6 +15,7 @@ import com.mojang.authlib.GameProfile;
 import io.github._5thlayer.atouchofmadness.crown.FlowerCrown;
 import io.github._5thlayer.atouchofmadness.discovery.Discoverables;
 import io.github._5thlayer.atouchofmadness.discovery.Discovery;
+import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Sanity;
@@ -60,6 +61,9 @@ final class DiscoveryTests {
 
     /** Wider than the company radius. */
     private static final int PADDING = 9;
+
+    /** A restore of 1 a minute, as a rate in Sanity a tick. */
+    private static final double PER_MINUTE = -EnvironmentRules.drainPerTick(1);
 
     static {
         Discovery.onTell((player, known) -> TOLD.put(player.getUUID(), known));
@@ -206,6 +210,8 @@ final class DiscoveryTests {
             if (PlayerSanity.get(player).value() >= Sanity.MAX) {
                 return;
             }
+            // Low light's 6 less the crown's 1.5, so the crown's restore applied.
+            expectNetRate(helper, player, -4.5);
             if (!Discovery.isKnown(player, Cause.LOW_LIGHT)) {
                 helper.fail("Low light moved Sanity and was not discovered");
             }
@@ -263,6 +269,8 @@ final class DiscoveryTests {
             if (PlayerSanity.get(player).value() <= Sanity.MIN) {
                 return;
             }
+            // Company's 2 less Wet's 1.5, so Wet's drain applied.
+            expectNetRate(helper, player, 0.5);
             if (!Discovery.isKnown(player, Cause.COMPANY)) {
                 helper.fail("Company moved Sanity and was not discovered");
             }
@@ -343,6 +351,13 @@ final class DiscoveryTests {
                 helper.succeed();
             }
         });
+    }
+
+    private static void expectNetRate(GameTestHelper helper, ServerPlayer player, double perMinute) {
+        double read = PlayerSanity.netRate(player) / PER_MINUTE;
+        if (Math.abs(read - perMinute) > 1e-9) {
+            helper.fail("the Net rate is " + read + "/min, not " + perMinute + ": the fixture tests nothing");
+        }
     }
 
     private static void expectTold(GameTestHelper helper, ServerPlayer player, String when) {
