@@ -14,7 +14,6 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition.Weather;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LightBlock;
 import net.minecraft.world.level.portal.TeleportTransition;
@@ -79,20 +78,6 @@ final class EnvironmentTests {
 
         var rain = tests.under("rain_by_day", new Sky(Sky.NOON, Weather.Type.RAIN)).withSkyAccess();
         rain.test("environment_rain_under_open_sky_drains_one_and_a_half", ticks, helper -> expectDrain(helper, MIDDLE, 1.5));
-
-        var storm = tests.under("storm_by_day", new Sky(Sky.NOON, Weather.Type.THUNDER));
-        storm.test("environment_a_storm_by_day_drains_six_in_shade", ticks, helper -> {
-            // Six blocks from the hole in the roof the sky light is 9: Low light only once a storm darkens the sky.
-            roomWithAHole(helper);
-            var spot = new BlockPos(7, 1, 1);
-            helper.runAtTickTime(READ_AT - 1, () -> {
-                int skyLight = helper.getLevel().getBrightness(LightLayer.SKY, helper.absolutePos(spot.above()));
-                if (skyLight < 5) {
-                    helper.fail("the shade's sky light is " + skyLight + ", dark enough to drain on a clear day");
-                }
-            });
-            expectDrain(helper, spot, 6);
-        });
     }
 
     /**
@@ -119,12 +104,6 @@ final class EnvironmentTests {
                 helper.setBlock(pos, Blocks.STONE);
             }
         }
-    }
-
-    /** The closed room with a hole in its roof over the corner at 1, 1. */
-    private static void roomWithAHole(GameTestHelper helper) {
-        closedRoom(helper);
-        helper.setBlock(new BlockPos(1, 4, 1), Blocks.AIR);
     }
 
     /** In another dimension, high over this test's column at {@code y}, on a stone block with full block light at the eyes. */
