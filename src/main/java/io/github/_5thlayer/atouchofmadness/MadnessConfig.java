@@ -3,6 +3,7 @@
 
 package io.github._5thlayer.atouchofmadness;
 
+import io.github._5thlayer.atouchofmadness.crown.CrownRules;
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.moments.MomentRules;
 import io.github._5thlayer.atouchofmadness.music.MusicRules;
@@ -14,7 +15,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 /**
  * The common config, {@code atouchofmadness-common.toml}: where Sanity starts and where its stages
  * begin, the drains of where a player stands, the drain and restore of who is near, the restore of
- * music, and the restores of sleep and flowers.
+ * music, the restores of sleep and flowers, and the Flower Crown.
  */
 public final class MadnessConfig {
 
@@ -118,6 +119,19 @@ public final class MadnessConfig {
 
     static {
         BUILDER.pop();
+        BUILDER.comment("The Flower Crown: its restore in Sanity a minute, and how long it lasts.").push("crown");
+    }
+
+    private static final ModConfigSpec.DoubleValue CROWN_RESTORE = BUILDER
+            .comment("The restore while a player wears a Flower Crown in the head slot.")
+            .defineInRange("restore", CrownRules.DEFAULT.restore(), 0, Sanity.MAX);
+
+    private static final ModConfigSpec.DoubleValue CROWN_WEAR_DAYS = BUILDER
+            .comment("How many in-game days of wear a Flower Crown lasts; it wears only while worn. A crown worn under another value keeps the share of its life it has used.")
+            .defineInRange("wearDays", CrownRules.DEFAULT.wearDays(), 0.001, 1000);
+
+    static {
+        BUILDER.pop();
     }
 
     public static final ModConfigSpec SPEC = BUILDER.build();
@@ -165,5 +179,13 @@ public final class MadnessConfig {
             return MomentRules.DEFAULT;
         }
         return new MomentRules(SLEEP.get(), FLOWER.get());
+    }
+
+    /** The defaults until the config loads. */
+    public static CrownRules crownRules() {
+        if (!SPEC.isLoaded()) {
+            return CrownRules.DEFAULT;
+        }
+        return new CrownRules(CROWN_RESTORE.get(), CROWN_WEAR_DAYS.get());
     }
 }

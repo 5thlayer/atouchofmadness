@@ -73,6 +73,7 @@ public final class ATouchOfMadnessGameTests {
         MomentsTests.register(tests);
         NearbyTests.register(tests);
         MusicTests.register(tests);
+        CrownTests.register(tests);
     }
 
     private static Identifier id(String path) {

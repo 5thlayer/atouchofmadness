@@ -22,11 +22,13 @@ path = [
 SPDX-FileCopyrightText = "2026 5thlayer"
 SPDX-License-Identifier = "LGPL-3.0-only"
 
-# The mod's own content and prose: docs, the glossary, the ADRs, and the datapack and resources.
+# The mod's own content and prose: docs, the glossary, the ADRs, and the datapack and resources,
+# its textures among them.
 [[annotations]]
 path = [
     "**/*.md",
     "**/src/main/resources/**/*.json",
+    "**/src/main/resources/**/*.png",
     "**/src/gametest/resources/**/*.json",
     "**/src/main/resources/**/*.mcmeta",
     "**/src/gametest/resources/**/*.mcmeta",

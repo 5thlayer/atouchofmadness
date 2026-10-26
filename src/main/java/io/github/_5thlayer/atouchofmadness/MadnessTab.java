@@ -3,13 +3,13 @@
 
 package io.github._5thlayer.atouchofmadness;
 
+import io.github._5thlayer.atouchofmadness.crown.FlowerCrown;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -31,10 +31,9 @@ public final class MadnessTab {
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, ATouchOfMadness.MOD_ID);
 
     static {
-        // A vanilla item until the Pillar has one of its own. An empty tab is hidden from the creative screen.
         TABS.register(KEY.identifier().getPath(), () -> CreativeModeTab.builder()
                 .title(Component.translatable(TITLE_KEY))
-                .icon(() -> new ItemStack(Items.ENDER_EYE))
+                .icon(() -> new ItemStack(FlowerCrown.ITEM.get()))
                 .displayItems(MadnessTab::displayItems)
                 .build());
     }
@@ -47,6 +46,6 @@ public final class MadnessTab {
     }
 
     private static void displayItems(CreativeModeTab.ItemDisplayParameters parameters, CreativeModeTab.Output output) {
-        // output.accept(MyItems.FIRST.get()), one line per item, in order.
+        output.accept(FlowerCrown.ITEM.get());
     }
 }

@@ -71,7 +71,7 @@ A music disc that is one of the last two discs a player heard; each play of it r
 _Avoid_: repeat, cooldown
 
 **Flower Crown**:
-This Pillar's headgear, made from flowers, that restores Sanity while worn and wilts with time.
+This Pillar's headgear, made from flowers, that restores Sanity while worn in the head slot and wilts away once its wear is spent; it wears only while worn.
 
 **Umbra Gear**:
 This Pillar's sword, pickaxe and armour made from Umbra, each the best in its role and each draining Sanity while held or worn.

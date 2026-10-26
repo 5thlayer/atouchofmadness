@@ -42,7 +42,11 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 @EventBusSubscriber(modid = ATouchOfMadness.MOD_ID)
 public final class PlayerSanity {
 
-    /** A continuous drain or restore: its rate for the player, in Sanity a tick, negative for a drain, or 0 when it does not apply. */
+    /**
+     * A continuous drain or restore: its rate for the player, in Sanity a tick, negative for a drain, or 0
+     * when it does not apply. Each is called once an evaluation and nowhere else, so a source may also
+     * act on what the evaluation stands for, as music records a play and the Flower Crown wears.
+     */
     @FunctionalInterface
     public interface Source {
         double rate(ServerPlayer player);
