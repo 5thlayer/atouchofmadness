@@ -71,6 +71,7 @@ public final class ATouchOfMadnessGameTests {
         SanityTests.register(tests);
         EnvironmentTests.register(tests);
         MomentsTests.register(tests);
+        NearbyTests.register(tests);
     }
 
     private static Identifier id(String path) {
@@ -80,31 +81,37 @@ public final class ATouchOfMadnessGameTests {
     /**
      * What a test class is handed: a name, a tick budget and a body per test, run in the default
      * environment or one of its own. Tests in different environments run in different batches. A test
-     * is roofed with barriers, which let light through but not rain, unless it has sky access.
+     * is roofed with barriers, which let light through but not rain, unless it has sky access. A test
+     * with padding is spaced that much further from the tests beside it.
      */
-    record Registrar(RegisterGameTestsEvent event, Holder<TestEnvironmentDefinition<?>> environment, boolean skyAccess) {
+    record Registrar(RegisterGameTestsEvent event, Holder<TestEnvironmentDefinition<?>> environment, boolean skyAccess, int padding) {
 
-        /** A Registrar whose tests run in this environment, registered under this name, with no sky access. */
+        /** A Registrar whose tests run in this environment, registered under this name, with no sky access and no padding. */
         static Registrar of(RegisterGameTestsEvent event, String name, TestEnvironmentDefinition<?> definition) {
-            return new Registrar(event, null, false).under(name, definition);
+            return new Registrar(event, null, false, 0).under(name, definition);
         }
 
         /** The tests registered through the result run in this environment, registered under this name. */
         Registrar under(String name, TestEnvironmentDefinition<?> definition) {
             // Registered rather than borrowed, since the event hands out no lookup for vanilla's.
-            return new Registrar(event, event.registerEnvironment(id(name), definition), skyAccess);
+            return new Registrar(event, event.registerEnvironment(id(name), definition), skyAccess, padding);
         }
 
         /** The tests registered through the result have no barrier roof, so rain reaches them. */
         Registrar withSkyAccess() {
-            return new Registrar(event, environment, true);
+            return new Registrar(event, environment, true, padding);
+        }
+
+        /** The tests registered through the result keep this many blocks clear around them, so what is in them is out of their neighbours' reach. */
+        Registrar padded(int blocks) {
+            return new Registrar(event, environment, skyAccess, blocks);
         }
 
         void test(String name, int maxTicks, Consumer<GameTestHelper> body) {
             var id = id(name);
             CodeGameTest.define(id, body);
             event.registerTest(id, new CodeGameTest(id, new TestData<>(environment, PLATFORM, maxTicks, 0, true, Rotation.NONE,
-                    false, 1, 1, skyAccess, 0)));
+                    false, 1, 1, skyAccess, padding)));
         }
     }
 }

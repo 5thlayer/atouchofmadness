@@ -52,6 +52,13 @@ _Avoid_: event, lump
 What a player's continuous drains and restores sum to at a given moment; instantaneous ones never count toward it.
 _Avoid_: trend (how the meter shows it), delta
 
+**Unsettling**:
+Said of a dimension type or an entity type in this Pillar's `#atouchofmadness:unsettling` tag for its registry: being in such a dimension, or near such an entity (a hostile nearby), is a continuous drain.
+
+**Company**:
+What restores Sanity for being near: a living entity in `#atouchofmadness:comforting`, tamed if it can be, or another player in Survival or Adventure. It counts once, however many are near.
+_Avoid_: friends, allies, comfort (the feel, not the mechanic)
+
 **Fresh disc**:
 A music disc that is not one of the last two discs a player heard, so a jukebox playing it restores fully.
 

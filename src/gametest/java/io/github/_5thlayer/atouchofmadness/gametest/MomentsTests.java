@@ -127,8 +127,9 @@ final class MomentsTests {
     }
 
     /**
-     * One player sleeps in a bed while another stays up beside it, both in full block light so the
-     * night drains neither. Once the sleeper has slept long enough the night skips and wakes them.
+     * One player sleeps in a bed in one corner while another stays up in the far corner, both in full
+     * block light so the night drains neither, and over 8 blocks apart so neither is the other's
+     * company. Once the sleeper has slept long enough the night skips and wakes them.
      */
     private static void sleep(GameTestHelper helper) {
         var sleeper = TestPlayers.profile();
@@ -137,13 +138,16 @@ final class MomentsTests {
             TestPlayers.leave(helper, sleeper);
             TestPlayers.leave(helper, awake);
         });
-        var head = MIDDLE.north();
-        helper.setBlock(MIDDLE, Blocks.RED_BED.defaultBlockState().setValue(BedBlock.FACING, Direction.NORTH).setValue(BedBlock.PART, BedPart.FOOT));
+        var foot = new BlockPos(6, 1, 7);
+        var head = foot.north();
+        var awakeAt = new BlockPos(0, 1, 0);
+        helper.setBlock(foot, Blocks.RED_BED.defaultBlockState().setValue(BedBlock.FACING, Direction.NORTH).setValue(BedBlock.PART, BedPart.FOOT));
         helper.setBlock(head, Blocks.RED_BED.defaultBlockState().setValue(BedBlock.FACING, Direction.NORTH).setValue(BedBlock.PART, BedPart.HEAD));
-        helper.setBlock(MIDDLE.above(), Blocks.LIGHT);
+        helper.setBlock(foot.above(), Blocks.LIGHT);
         helper.setBlock(head.above(), Blocks.LIGHT);
-        joinAt(helper, sleeper, MIDDLE.east());
-        joinAt(helper, awake, MIDDLE.west());
+        helper.setBlock(awakeAt.above(), Blocks.LIGHT);
+        joinAt(helper, sleeper, foot.east());
+        joinAt(helper, awake, awakeAt);
         boolean[] slept = {false};
         helper.onEachTick(() -> {
             var players = TestPlayers.playerList(helper);
@@ -151,9 +155,9 @@ final class MomentsTests {
             var up = players.getPlayer(awake.id());
             // The bed reads the night from the level's environment, which may lag the clock set on the first tick.
             if (!slept[0]) {
-                slept[0] = asleep.startSleepInBed(helper.absolutePos(MIDDLE)).right().isPresent();
+                slept[0] = asleep.startSleepInBed(helper.absolutePos(foot)).right().isPresent();
                 if (!slept[0] && helper.getTick() >= PlayerSanity.EVALUATION_TICKS) {
-                    helper.fail("the sleeper cannot sleep: " + asleep.startSleepInBed(helper.absolutePos(MIDDLE)).left().orElseThrow());
+                    helper.fail("the sleeper cannot sleep: " + asleep.startSleepInBed(helper.absolutePos(foot)).left().orElseThrow());
                 }
             }
             asleep.doTick();

@@ -5,13 +5,15 @@ package io.github._5thlayer.atouchofmadness;
 
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.moments.MomentRules;
+import io.github._5thlayer.atouchofmadness.nearby.NearbyRules;
 import io.github._5thlayer.atouchofmadness.sanity.Sanity;
 import io.github._5thlayer.atouchofmadness.sanity.SanityRules;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * The common config, {@code atouchofmadness-common.toml}: where Sanity starts and where its stages
- * begin, the drains of where a player stands, and the restores of sleep and flowers.
+ * begin, the drains of where a player stands, the drain and restore of who is near, and the restores of
+ * sleep and flowers.
  */
 public final class MadnessConfig {
 
@@ -64,6 +66,31 @@ public final class MadnessConfig {
 
     static {
         BUILDER.pop();
+        BUILDER.comment("The drain and restore of who is near a player: rates in Sanity a minute, radii in blocks.").push("nearby");
+    }
+
+    private static final ModConfigSpec.DoubleValue HOSTILE_RADIUS = BUILDER
+            .comment("How near an entity in #atouchofmadness:unsettling must be to drain.")
+            .defineInRange("hostileRadius", NearbyRules.DEFAULT.hostileRadius(), 0, 64);
+
+    private static final ModConfigSpec.DoubleValue HOSTILE = BUILDER
+            .comment("The drain of each such entity, times its atouchofmadness:unsettling_weight data map entry, 1 if it has none.")
+            .defineInRange("hostile", NearbyRules.DEFAULT.hostile(), 0, Sanity.MAX);
+
+    private static final ModConfigSpec.DoubleValue HOSTILE_CAP = BUILDER
+            .comment("The most all such entities together drain.")
+            .defineInRange("hostileCap", NearbyRules.DEFAULT.hostileCap(), 0, Sanity.MAX);
+
+    private static final ModConfigSpec.DoubleValue COMPANY_RADIUS = BUILDER
+            .comment("How near company must be to restore.")
+            .defineInRange("companyRadius", NearbyRules.DEFAULT.companyRadius(), 0, 64);
+
+    private static final ModConfigSpec.DoubleValue COMPANY = BUILDER
+            .comment("The restore while any entity in #atouchofmadness:comforting, tamed if it can be, or any other Survival or Adventure player is near; once however many.")
+            .defineInRange("company", NearbyRules.DEFAULT.company(), 0, Sanity.MAX);
+
+    static {
+        BUILDER.pop();
         BUILDER.comment("The instantaneous restores, each in Sanity. A food's is its atouchofmadness:sanity_modifier data map entry.").push("moments");
     }
 
@@ -100,6 +127,14 @@ public final class MadnessConfig {
             return EnvironmentRules.DEFAULT;
         }
         return new EnvironmentRules(LOW_LIGHT_BELOW.get(), LOW_LIGHT.get(), FREEZING.get(), WET.get(), UNSETTLING.get());
+    }
+
+    /** The defaults until the config loads. */
+    public static NearbyRules nearbyRules() {
+        if (!SPEC.isLoaded()) {
+            return NearbyRules.DEFAULT;
+        }
+        return new NearbyRules(HOSTILE_RADIUS.get(), HOSTILE.get(), HOSTILE_CAP.get(), COMPANY_RADIUS.get(), COMPANY.get());
     }
 
     /** The defaults until the config loads. */
