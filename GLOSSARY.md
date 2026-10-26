@@ -59,6 +59,10 @@ Said of a dimension type or an entity type in this Pillar's `#atouchofmadness:un
 What restores Sanity for being near: a living entity in `#atouchofmadness:comforting`, tamed if it can be, or another player in Survival or Adventure. It counts once, however many are near.
 _Avoid_: friends, allies, comfort (the feel, not the mechanic)
 
+**Play**:
+One jukebox's song from its start, as a player hears it: it goes on at the freshness it began with, however the player comes and goes, until that jukebox stops or starts a song again.
+_Avoid_: listen, track
+
 **Fresh disc**:
 A music disc that is not one of the last two discs a player heard, so a jukebox playing it restores fully.
 

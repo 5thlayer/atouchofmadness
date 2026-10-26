@@ -5,6 +5,7 @@ package io.github._5thlayer.atouchofmadness;
 
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.moments.MomentRules;
+import io.github._5thlayer.atouchofmadness.music.MusicRules;
 import io.github._5thlayer.atouchofmadness.nearby.NearbyRules;
 import io.github._5thlayer.atouchofmadness.sanity.Sanity;
 import io.github._5thlayer.atouchofmadness.sanity.SanityRules;
@@ -12,8 +13,8 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * The common config, {@code atouchofmadness-common.toml}: where Sanity starts and where its stages
- * begin, the drains of where a player stands, the drain and restore of who is near, and the restores of
- * sleep and flowers.
+ * begin, the drains of where a player stands, the drain and restore of who is near, the restore of
+ * music, and the restores of sleep and flowers.
  */
 public final class MadnessConfig {
 
@@ -91,6 +92,19 @@ public final class MadnessConfig {
 
     static {
         BUILDER.pop();
+        BUILDER.comment("The restore of music: the rate in Sanity a minute, the range in blocks.").push("music");
+    }
+
+    private static final ModConfigSpec.DoubleValue MUSIC_RANGE = BUILDER
+            .comment("How near a playing jukebox must be to restore. Only the nearest counts.")
+            .defineInRange("range", MusicRules.DEFAULT.range(), 0, 256);
+
+    private static final ModConfigSpec.DoubleValue FRESH = BUILDER
+            .comment("The restore while that jukebox plays a Fresh disc, one not among the last two a player heard; each play of a Stale disc restores half its last play's.")
+            .defineInRange("fresh", MusicRules.DEFAULT.fresh(), 0, Sanity.MAX);
+
+    static {
+        BUILDER.pop();
         BUILDER.comment("The instantaneous restores, each in Sanity. A food's is its atouchofmadness:sanity_modifier data map entry.").push("moments");
     }
 
@@ -135,6 +149,14 @@ public final class MadnessConfig {
             return NearbyRules.DEFAULT;
         }
         return new NearbyRules(HOSTILE_RADIUS.get(), HOSTILE.get(), HOSTILE_CAP.get(), COMPANY_RADIUS.get(), COMPANY.get());
+    }
+
+    /** The defaults until the config loads. */
+    public static MusicRules musicRules() {
+        if (!SPEC.isLoaded()) {
+            return MusicRules.DEFAULT;
+        }
+        return new MusicRules(MUSIC_RANGE.get(), FRESH.get());
     }
 
     /** The defaults until the config loads. */
