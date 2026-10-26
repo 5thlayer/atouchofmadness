@@ -48,13 +48,13 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
  * their cap, 1 at 50, 2 at 35, 3 at 20 and 4 at 10 and below, Gaunts only below 10; light doesn't
  * matter, and a dimension type outside {@code #atouchofmadness:shadows} gets none. Each creature is
  * sent only to its Owner and Insane players, who alone can hit it, even one standing still as their
- * Stage changes; Unreal while the Owner is Uneasy,
- * harming and harmed by nothing, fading when approached or struck; Real while they are Insane,
- * hunting and killable, drifting through walls, landing no hit from inside a block, dropping Umbra, still on Peaceful. It goes with its Owner's logout, death,
- * change of dimension and sleep, and when their cap drops, never stops them sleeping, and is never
- * saved. Its Owner's own nearby drain 2/min for a Lurker and 4 for a Gaunt, twice that while Real; a
- * Real one's hit takes 5; carrying Umbra drains 1/min. Each shared rule is one body run for the
- * Lurker and the Gaunt in turn, as two tests.
+ * Stage changes; Unreal while the Owner is Uneasy, harming and harmed by nothing, fading when
+ * approached or struck; Real while they are Insane, hunting and killable, drifting through walls,
+ * landing no hit from inside a block but coming out beside its Owner to strike, dropping Umbra, still
+ * on Peaceful. It goes with its Owner's logout, death, change of dimension and sleep, and when their
+ * cap drops, never stops them sleeping, and is never saved. Its Owner's own nearby drain 2/min for a
+ * Lurker and 4 for a Gaunt, twice that while Real; a Real one's hit takes 5; carrying Umbra drains
+ * 1/min. Each shared rule is one body run for the Lurker and the Gaunt in turn, as two tests.
  *
  * <p>The game-test server turns {@code doMobSpawning} off, so no attempt comes but those a test makes
  * through {@link ShadowSpawner#attempt}. Each test joins players of its own and logs them out however
@@ -77,6 +77,9 @@ final class ShadowTests {
 
     /** Two evaluations, so one has come whichever tick of a second is the player's own. */
     private static final int EVALUATED = 2 * PlayerSanity.EVALUATION_TICKS;
+
+    /** A second, long enough for anything inside a block to suffocate. */
+    private static final int A_SECOND = 20;
 
     /** Wider than the company radius. */
     private static final int PADDING = 9;
@@ -128,8 +131,8 @@ final class ShadowTests {
         for (var kind : KINDS) {
             String name = kind.name();
             tests.test("shadow_phase_a_real_" + name + "_reaches_its_owner_through_a_wall", 200, helper -> throughAWall(helper, kind));
-            tests.test("shadow_phase_a_" + name + "_inside_a_block_is_unharmed_and_lands_no_hit", PlayerSanity.EVALUATION_TICKS + 1,
-                    helper -> insideABlock(helper, kind));
+            tests.test("shadow_phase_a_" + name + "_inside_a_block_is_unharmed_and_lands_no_hit", A_SECOND + 1, helper -> insideABlock(helper, kind));
+            tests.test("shadow_phase_a_real_" + name + "_comes_out_of_a_wall_to_keep_striking_its_owner", 300, helper -> againstAWall(helper, kind));
             tests.test("shadow_a_real_" + name + "_drops_its_umbra", 1, helper -> drops(helper, kind));
             tests.test("shadow_a_" + name + "_is_sent_to_its_owner_and_the_insane_and_only_they_hit_it", 1, helper -> sentTo(helper, kind));
             tests.test("shadow_an_unreal_" + name + "_takes_and_deals_no_harm_and_fades_when_struck", ShadowCreature.FADE_TICKS + 5,
@@ -306,7 +309,7 @@ final class ShadowTests {
         var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
         var creature = place(helper, kind, owner, at);
         creature.setNoAi(true);
-        helper.runAtTickTime(PlayerSanity.EVALUATION_TICKS, () -> {
+        helper.runAtTickTime(A_SECOND, () -> {
             if (creature.getHealth() < creature.getMaxHealth()) {
                 helper.fail("a " + kind.name() + " inside a block was harmed");
             }
@@ -319,6 +322,31 @@ final class ShadowTests {
                 helper.fail("a " + kind.name() + " clear of the pillar landed no hit");
             }
             helper.succeed();
+        });
+    }
+
+    /**
+     * Its Owner stands flush against a wall, and the creature comes at them through it, from behind:
+     * stopping short of them would leave it in the wall, so it comes out beside them and strikes again
+     * and again. The Owner, never ticked, would stay
+     * invulnerable after the first hit, so the test lets it lapse; each strike shows in their Sanity.
+     */
+    private static void againstAWall(GameTestHelper helper, Kind kind) {
+        for (int y = 1; y <= 4; y++) {
+            for (int z = 0; z <= 8; z++) {
+                helper.setBlock(new BlockPos(0, y, z), Blocks.STONE);
+            }
+        }
+        var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
+        var flush = Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(1, 1, 4))).add(owner.getBbWidth() / 2 - 0.5, 0, 0);
+        owner.teleport(new TeleportTransition(helper.getLevel(), flush, Vec3.ZERO, 0, 0, TeleportTransition.DO_NOTHING));
+        place(helper, kind, owner, new BlockPos(0, 1, 4));
+        helper.onEachTick(() -> {
+            owner.invulnerableTime = 0;
+            owner.setHealth(owner.getMaxHealth());
+            if (PlayerSanity.get(owner).value() <= INSANE - 3 * 5) {
+                helper.succeed();
+            }
         });
     }
 

@@ -187,20 +187,20 @@ public final class MadnessConfig {
             ShadowRules.DEFAULT.gaunt());
 
     /** A creature's health, attack damage and drift speed, in a section of their own. */
-    private record Stats(ModConfigSpec.DoubleValue health, ModConfigSpec.DoubleValue damage, ModConfigSpec.DoubleValue speed) {
+    private record Stats(ModConfigSpec.DoubleValue health, ModConfigSpec.DoubleValue damage, ModConfigSpec.DoubleValue drift) {
 
         static Stats define(String name, String comment, ShadowRules.Stats defaults) {
             BUILDER.comment(comment).push(name);
             var stats = new Stats(
                     BUILDER.comment("Its health.").defineInRange("health", defaults.health(), 1, 1024),
                     BUILDER.comment("The damage of each of its hits, before vanilla scales it by difficulty.").defineInRange("damage", defaults.damage(), 0, 1024),
-                    BUILDER.comment("How fast it drifts, through blocks and all, in blocks a second.").defineInRange("drift", defaults.speed(), 0, 40));
+                    BUILDER.comment("How fast it drifts, through blocks and all, in blocks a second.").defineInRange("drift", defaults.drift(), 0, 40));
             BUILDER.pop();
             return stats;
         }
 
         ShadowRules.Stats get() {
-            return new ShadowRules.Stats(health.get(), damage.get(), speed.get());
+            return new ShadowRules.Stats(health.get(), damage.get(), drift.get());
         }
     }
 

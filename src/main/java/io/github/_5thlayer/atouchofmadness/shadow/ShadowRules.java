@@ -17,8 +17,8 @@ import java.util.List;
 public record ShadowRules(List<Double> caps, int intervalTicks, double minDistance, double maxDistance, double fadeDistance,
         double gauntBelow, double gauntChance, double realFactor, double strike, double umbra, Stats lurker, Stats gaunt) {
 
-    /** A creature's health, attack damage, and speed, how fast it drifts in blocks a second. */
-    public record Stats(double health, double damage, double speed) {
+    /** A creature's health, attack damage, and how fast it drifts, in blocks a second. */
+    public record Stats(double health, double damage, double drift) {
     }
 
     /**
