@@ -5,32 +5,10 @@ package io.github._5thlayer.atouchofmadness.sanity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 
-/** A tick moves Sanity by the sum of the rates that apply, held to 0–100. */
+/** Sanity is held to 0–100 however it moves. */
 class SanityTest {
-
-    @Test
-    void aTickMovesByTheSumOfItsRates() {
-        assertEquals(59.5, new Sanity(60).tick(List.of(-1.0, 0.25, 0.25)).value());
-    }
-
-    @Test
-    void aTickWithNoRatesLeavesSanityWhereItIs() {
-        assertEquals(60, new Sanity(60).tick(List.of()).value());
-    }
-
-    @Test
-    void aTickStopsAtZero() {
-        assertEquals(0, new Sanity(0.5).tick(List.of(-2.0)).value());
-    }
-
-    @Test
-    void aTickStopsAtAHundred() {
-        assertEquals(100, new Sanity(99.5).tick(List.of(2.0)).value());
-    }
 
     @Test
     void anInstantaneousDrainStopsAtZero() {

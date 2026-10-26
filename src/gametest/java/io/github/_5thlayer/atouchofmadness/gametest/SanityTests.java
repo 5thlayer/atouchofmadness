@@ -3,14 +3,27 @@
 
 package io.github._5thlayer.atouchofmadness.gametest;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.logging.LogUtils;
+import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
+import io.github._5thlayer.atouchofmadness.MadnessConfig;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
+import io.github._5thlayer.atouchofmadness.sanity.Stage;
+import io.github._5thlayer.atouchofmadness.sanity.StageChange;
 import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.gametest.framework.GameTestInfo;
+import net.minecraft.gametest.framework.GameTestListener;
+import net.minecraft.gametest.framework.GameTestRunner;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,16 +34,56 @@ import net.minecraft.server.players.PlayerList;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.storage.TagValueInput;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * Every player has Sanity: 100 when new, 50 once respawned after dying, kept through a relog, and
- * read and moved by {@code /sanity} at permission level 2, held to 0–100. Each test joins its own
+ * read and moved by {@code /sanity} at permission level 2, held to 0–100. A listener hears each join
+ * and each Stage change, from any path, and cannot move Sanity itself; the continuous drains and
+ * restores move it once a second by their Net rate, which is never saved. Each test joins its own
  * player, under a name of its own so the command finds it alone, and logs it out again however the
  * test ends, so a failure leaves no player on the shared server.
  */
 final class SanityTests {
 
+    /** Every Stage change heard, by player. */
+    private static final Map<UUID, List<StageChange>> HEARD = new ConcurrentHashMap<>();
+    /** The players whose Stage-change listener tries to move their Sanity, and those it was refused for. */
+    private static final Set<UUID> MEDDLERS = ConcurrentHashMap.newKeySet();
+    private static final Set<UUID> REFUSED = ConcurrentHashMap.newKeySet();
+    /** A continuous drain's rate, by player; the players not in it it doesn't apply to. */
+    private static final Map<UUID, Double> RATES = new ConcurrentHashMap<>();
+
+    /** The Pillar's common config, as it loaded, for a test to reload. */
+    private static ModConfig config;
+
+    static {
+        PlayerSanity.onStageChange((player, change) -> {
+            HEARD.computeIfAbsent(player.getUUID(), id -> new ArrayList<>()).add(change);
+            if (MEDDLERS.contains(player.getUUID())) {
+                try {
+                    PlayerSanity.add(player, -1);
+                } catch (IllegalStateException refused) {
+                    REFUSED.add(player.getUUID());
+                }
+            }
+        });
+        PlayerSanity.addSource(player -> RATES.getOrDefault(player.getUUID(), 0.0));
+    }
+
     private SanityTests() {
+    }
+
+    static void listen(IEventBus modBus) {
+        modBus.addListener(ModConfigEvent.Loading.class, event -> {
+            if (event.getConfig().getSpec() == MadnessConfig.SPEC) {
+                config = event.getConfig();
+            }
+        });
     }
 
     static void register(ATouchOfMadnessGameTests.Registrar tests) {
@@ -40,6 +93,191 @@ final class SanityTests {
         tests.test("sanity_survives_a_relog", 1, SanityTests::relog);
         tests.test("sanity_command_sets_and_adds_held_to_the_range", 1, SanityTests::setsAndAdds);
         tests.test("sanity_command_needs_permission_level_2", 1, SanityTests::permission);
+        tests.test("sanity_a_listener_hears_a_join_from_no_stage", 1, SanityTests::heardJoin);
+        tests.test("sanity_a_listener_hears_the_command_cross_a_threshold", 1, SanityTests::heardCommand);
+        tests.test("sanity_a_listener_hears_a_respawn_into_another_stage", 1, SanityTests::heardRespawn);
+        tests.test("sanity_a_listener_hears_a_reload_move_a_threshold_across_it", 1, SanityTests::heardReload);
+        tests.test("sanity_a_listener_cannot_move_it", 1, SanityTests::listenerCannotMove);
+        tests.test("sanity_moves_once_a_second_by_its_net_rate", 3 * PlayerSanity.EVALUATION_TICKS, SanityTests::onceASecond);
+    }
+
+    private static void heardJoin(GameTestHelper helper) {
+        var profile = profile();
+        join(helper, profile);
+        try {
+            expectHeard(helper, profile, List.of(change(null, Stage.SANE)));
+        } finally {
+            leave(helper, profile);
+        }
+        helper.succeed();
+    }
+
+    /** An instantaneous move across a threshold is heard; one within a Stage is not. */
+    private static void heardCommand(GameTestHelper helper) {
+        var profile = profile();
+        String name = join(helper, profile).getPlainTextName();
+        try {
+            run(helper, "sanity set " + name + " 60");
+            run(helper, "sanity set " + name + " 10");
+            run(helper, "sanity add " + name + " 5");
+            run(helper, "sanity add " + name + " 20");
+            expectHeard(helper, profile, List.of(change(null, Stage.SANE), change(Stage.SANE, Stage.INSANE),
+                    change(Stage.INSANE, Stage.UNEASY)));
+        } finally {
+            leave(helper, profile);
+        }
+        helper.succeed();
+    }
+
+    /** Respawning at 50 is heard from Insane, and not from Uneasy, where it already was. */
+    private static void heardRespawn(GameTestHelper helper) {
+        var profile = profile();
+        var player = join(helper, profile);
+        try {
+            run(helper, "sanity set " + player.getPlainTextName() + " 10");
+            var respawned = playerList(helper).respawn(player, false, Entity.RemovalReason.KILLED);
+            playerList(helper).respawn(respawned, false, Entity.RemovalReason.KILLED);
+            expectHeard(helper, profile, List.of(change(null, Stage.SANE), change(Stage.SANE, Stage.INSANE),
+                    change(Stage.INSANE, Stage.UNEASY)));
+        } finally {
+            leave(helper, profile);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Raising the Sane line from 50 to 70 makes a player at 60 Uneasy, and putting it back makes them
+     * Sane again. The other tests' players stay in their Stage under either line.
+     */
+    private static void heardReload(GameTestHelper helper) {
+        var profile = profile();
+        var player = join(helper, profile);
+        var saneAbove = (ModConfigSpec.DoubleValue) MadnessConfig.SPEC.getValues().get(List.of("sanity", "saneAbove"));
+        double original = saneAbove.get();
+        try {
+            run(helper, "sanity set " + player.getPlainTextName() + " 60");
+            reload(saneAbove, 70);
+            if (PlayerSanity.stage(player) != Stage.UNEASY) {
+                helper.fail("a player at 60 is " + PlayerSanity.stage(player) + " with the Sane line at 70");
+            }
+            reload(saneAbove, original);
+            expectHeard(helper, profile, List.of(change(null, Stage.SANE), change(Stage.SANE, Stage.UNEASY),
+                    change(Stage.UNEASY, Stage.SANE)));
+        } finally {
+            // Heard by no one when the line is already back.
+            reload(saneAbove, original);
+            leave(helper, profile);
+        }
+        helper.succeed();
+    }
+
+    private static void listenerCannotMove(GameTestHelper helper) {
+        var profile = profile();
+        MEDDLERS.add(profile.id());
+        var player = join(helper, profile);
+        try {
+            if (!REFUSED.contains(profile.id())) {
+                helper.fail("a Stage-change listener moved Sanity unrefused");
+            }
+            if (PlayerSanity.get(player).value() != 100) {
+                helper.fail("a Stage-change listener moved Sanity to " + PlayerSanity.get(player).value());
+            }
+        } finally {
+            MEDDLERS.remove(profile.id());
+            leave(helper, profile);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * A drain of 0.05 a tick takes 1 at each of the player's evaluations, which come 20 ticks apart
+     * with Sanity still between them. A connection would tick the player each server tick; this one
+     * doesn't, so the test does. After a relog the Net rate is 0 again, since it is never saved.
+     */
+    private static void onceASecond(GameTestHelper helper) {
+        var profile = profile();
+        helper.testInfo.addListener(leaveWhenDone(helper, profile));
+        join(helper, profile);
+        RATES.put(profile.id(), -0.05);
+        long[] firstEvaluation = {-1};
+        helper.onEachTick(() -> {
+            var player = playerList(helper).getPlayer(profile.id());
+            player.doTick();
+            double value = PlayerSanity.get(player).value();
+            long tick = helper.getTick();
+            if (firstEvaluation[0] < 0) {
+                if (value != 100) {
+                    if (value != 99 || PlayerSanity.netRate(player) != -0.05) {
+                        helper.fail("the first evaluation left Sanity " + value + " and a Net rate of "
+                                + PlayerSanity.netRate(player) + ", not 99 and -0.05");
+                    }
+                    firstEvaluation[0] = tick;
+                }
+                return;
+            }
+            long since = tick - firstEvaluation[0];
+            if (since < PlayerSanity.EVALUATION_TICKS) {
+                if (value != 99) {
+                    helper.fail("Sanity moved to " + value + " " + since + " ticks after an evaluation");
+                }
+                return;
+            }
+            if (value != 98) {
+                helper.fail("Sanity is " + value + " an evaluation later, not 98");
+            }
+            leave(helper, profile);
+            double relogged = PlayerSanity.netRate(join(helper, profile));
+            if (relogged != 0) {
+                helper.fail("the Net rate after a relog is " + relogged + ", not 0");
+            }
+            helper.succeed();
+        });
+    }
+
+    /** Logs the profile's player out and drops its drain when the test passes or fails, at whatever tick. */
+    private static GameTestListener leaveWhenDone(GameTestHelper helper, GameProfile profile) {
+        return new GameTestListener() {
+            @Override
+            public void testStructureLoaded(GameTestInfo testInfo) {
+            }
+
+            @Override
+            public void testPassed(GameTestInfo testInfo, GameTestRunner runner) {
+                done();
+            }
+
+            @Override
+            public void testFailed(GameTestInfo testInfo, GameTestRunner runner) {
+                done();
+            }
+
+            @Override
+            public void testAddedForRerun(GameTestInfo original, GameTestInfo copy, GameTestRunner runner) {
+            }
+
+            private void done() {
+                RATES.remove(profile.id());
+                leave(helper, profile);
+            }
+        };
+    }
+
+    /** Sets the config's Sane line in memory, without saving the file, and reloads it as a change to the file would. */
+    private static void reload(ModConfigSpec.DoubleValue saneAbove, double value) {
+        saneAbove.set(value);
+        ModList.get().getModContainerById(ATouchOfMadness.MOD_ID).orElseThrow()
+                .acceptEvent(new ModConfigEvent.Reloading(config));
+    }
+
+    private static StageChange change(Stage from, Stage to) {
+        return new StageChange(Optional.ofNullable(from), to);
+    }
+
+    private static void expectHeard(GameTestHelper helper, GameProfile profile, List<StageChange> expected) {
+        var heard = HEARD.getOrDefault(profile.id(), List.of());
+        if (!heard.equals(expected)) {
+            helper.fail("heard " + heard + ", not " + expected);
+        }
     }
 
     private static void newPlayer(GameTestHelper helper) {
@@ -187,6 +425,7 @@ final class SanityTests {
         if (player != null) {
             playerList(helper).remove(player);
         }
+        HEARD.remove(profile.id());
     }
 
     private static PlayerList playerList(GameTestHelper helper) {

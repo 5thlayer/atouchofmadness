@@ -53,6 +53,7 @@ public final class ATouchOfMadnessGameTests {
 
     public static void register(IEventBus modBus) {
         TEST_TYPES.register(modBus);
+        SanityTests.listen(modBus);
         // Posted only when game tests are enabled, which a production game never is.
         modBus.addListener(ATouchOfMadnessGameTests::registerTests);
     }
