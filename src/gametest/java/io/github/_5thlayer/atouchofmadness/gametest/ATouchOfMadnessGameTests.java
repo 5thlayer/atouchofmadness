@@ -64,6 +64,7 @@ public final class ATouchOfMadnessGameTests {
         LoadTests.register(tests);
         GameTestPackTests.register(tests);
         CreativeTabTests.register(tests);
+        SanityTests.register(tests);
     }
 
     private static Identifier id(String path) {
