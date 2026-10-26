@@ -14,13 +14,16 @@ import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition.Weather;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.HopperBlockEntity;
 import net.minecraft.world.level.block.entity.JukeboxBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
 
@@ -100,6 +103,20 @@ final class MusicTests {
                     scene.play(NEAR, Items.MUSIC_DISC_CAT);
                 }, null),
                 new Step(Scene::join, 2.0)));
+        // The jukebox is saved and taken away while the player is out, as its chunk is when it stops
+        // ticking, and comes back where its song left off, so its song goes on later than it would have:
+        // still the same play, at 2, not a new one at 1.
+        script(tests, "music_a_paused_song_goes_on_at_its_factor", List.of(
+                play(NEAR, Items.MUSIC_DISC_CAT, 4),
+                play(NEAR, Items.MUSIC_DISC_CAT, 2),
+                new Step(scene -> {
+                    scene.leave();
+                    scene.pause(NEAR);
+                }, null),
+                new Step(scene -> {
+                    scene.resume(NEAR);
+                    scene.join();
+                }, 2.0)));
         script(tests, "music_walking_to_another_jukebox_keeps_the_history", List.of(
                 play(NEAR, Items.MUSIC_DISC_CAT, 4),
                 new Step(scene -> {
@@ -161,12 +178,18 @@ final class MusicTests {
         });
     }
 
+    /** A block entity saved and taken away: its block, and what it saved. */
+    private record Saved(BlockState state, CompoundTag tag) {
+    }
+
     /** A test's player, by profile so a relog finds them again, and the jukeboxes it placed. */
     private static final class Scene {
 
         private final GameTestHelper helper;
         private final GameProfile profile;
         private final Set<BlockPos> placed = new HashSet<>();
+        /** The jukebox {@link #pause} took away. */
+        private Saved paused;
 
         Scene(GameTestHelper helper, GameProfile profile) {
             this.helper = helper;
@@ -187,6 +210,27 @@ final class MusicTests {
 
         void stop(BlockPos pos) {
             jukebox(pos).setTheItem(ItemStack.EMPTY);
+        }
+
+        /**
+         * Saves the jukebox at {@code pos} and takes it away, disc and all, so its song stops ticking, as a
+         * jukebox's chunk is saved and unloaded.
+         */
+        void pause(BlockPos pos) {
+            var absolute = helper.absolutePos(pos);
+            var level = helper.getLevel();
+            var jukebox = jukebox(pos);
+            paused = new Saved(jukebox.getBlockState(), jukebox.saveWithFullMetadata(level.registryAccess()));
+            level.removeBlockEntity(absolute);
+            level.setBlockAndUpdate(absolute, Blocks.AIR.defaultBlockState());
+        }
+
+        /** Brings back the jukebox {@link #pause} saved at {@code pos}, as a chunk loads it, its song where it left off. */
+        void resume(BlockPos pos) {
+            var absolute = helper.absolutePos(pos);
+            var level = helper.getLevel();
+            level.setBlockAndUpdate(absolute, paused.state());
+            level.setBlockEntity(BlockEntity.loadStatic(absolute, paused.state(), paused.tag(), level.registryAccess()));
         }
 
         /** Places an empty jukebox at {@code pos}, and a hopper above it holding {@code disc}, which it feeds down. */
