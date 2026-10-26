@@ -46,14 +46,22 @@ public final class EnvironmentDrains {
 
     /**
      * Whether the max local raw brightness at the eye block is Low light, a full moon counting as
-     * overhead only when the eye block can see the sky (ADR 0003).
+     * overhead only in a dimension with a moon, and only when the eye block can see the sky (ADR 0003).
      */
     private static boolean isInLowLight(ServerPlayer player) {
         var level = player.level();
         var eye = BlockPos.containing(player.getEyePosition());
-        boolean fullMoonOverhead = level.canSeeSky(eye)
+        boolean fullMoonOverhead = hasMoon(level.dimensionType()) && level.canSeeSky(eye)
                 && level.environmentAttributes().getValue(EnvironmentAttributes.MOON_PHASE, eye) == MoonPhase.FULL_MOON;
         return rules.isLowLight(level.getMaxLocalRawBrightness(eye), fullMoonOverhead);
+    }
+
+    /**
+     * Whether one of the dimension type's timelines moves the moon through its phases, as the
+     * Overworld's does. Elsewhere vanilla reads every hour as a full moon, which is no moon at all.
+     */
+    public static boolean hasMoon(DimensionType type) {
+        return type.timelines().stream().anyMatch(timeline -> timeline.value().attributes().contains(EnvironmentAttributes.MOON_PHASE));
     }
 
     private static double drainIf(boolean applies, double perMinute) {

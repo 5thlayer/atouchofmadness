@@ -3,6 +3,9 @@
 
 package io.github._5thlayer.atouchofmadness.gametest;
 
+import java.util.List;
+
+import io.github._5thlayer.atouchofmadness.environment.EnvironmentDrains;
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import net.minecraft.core.BlockPos;
@@ -61,6 +64,8 @@ final class EnvironmentTests {
         // The game-test pack adds the End to #atouchofmadness:unsettling.
         tests.test("environment_a_datapack_makes_the_end_unsettling", ticks, helper -> expectDrainIn(helper, Level.END, 200, 1));
 
+        tests.test("environment_only_the_overworld_has_a_moon", 1, EnvironmentTests::onlyTheOverworldHasAMoon);
+
         var newMoon = tests.under("new_moon_night", new Sky(Sky.NEW_MOON_MIDNIGHT, Weather.Type.CLEAR));
         newMoon.test("environment_a_moonless_night_under_open_sky_drains_six", ticks, helper -> expectDrain(helper, MIDDLE, 6));
 
@@ -87,6 +92,22 @@ final class EnvironmentTests {
             });
             expectDrain(helper, spot, 6);
         });
+    }
+
+    /**
+     * The End and the Nether have no moon, so a full moon is never overhead there. No vanilla dimension
+     * has a dark open sky without a moon, and the game-test server loads no datapack dimensions, so
+     * this reads the dimension types rather than standing a player under such a sky.
+     */
+    private static void onlyTheOverworldHasAMoon(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        for (var dimension : List.of(Level.OVERWORLD, Level.NETHER, Level.END)) {
+            boolean hasMoon = EnvironmentDrains.hasMoon(server.getLevel(dimension).dimensionType());
+            if (hasMoon != (dimension == Level.OVERWORLD)) {
+                helper.fail(dimension.identifier() + (hasMoon ? " has a moon" : " has no moon"));
+            }
+        }
+        helper.succeed();
     }
 
     /** A stone room over the whole platform, its walls and its roof at y 4 closed. */
