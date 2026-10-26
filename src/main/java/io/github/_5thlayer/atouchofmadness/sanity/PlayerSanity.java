@@ -78,7 +78,7 @@ public final class PlayerSanity {
 
     @SubscribeEvent
     static void tick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
+        if (SOURCES.isEmpty() || !(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
         var rates = SOURCES.stream().map(source -> source.rate(player)).toList();

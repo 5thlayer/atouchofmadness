@@ -11,8 +11,8 @@ import net.neoforged.fml.config.ModConfig;
 
 /**
  * The Pillar's entry point. It registers the Pillar's own creative tab, each player's Sanity and the
- * common config. The game tests hook
- * themselves in from the {@code gametest} source set, which never ships (libworks ADR 0011).
+ * common config. The game tests hook themselves in from the {@code gametest} source set, which never
+ * ships (libworks ADR 0011).
  */
 @Mod(ATouchOfMadness.MOD_ID)
 public final class ATouchOfMadness {

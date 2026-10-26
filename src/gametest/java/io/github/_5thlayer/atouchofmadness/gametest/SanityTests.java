@@ -17,6 +17,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.server.permissions.LevelBasedPermissionSet;
 import net.minecraft.server.permissions.PermissionSet;
+import net.minecraft.server.players.PlayerList;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.storage.TagValueInput;
@@ -24,7 +25,8 @@ import net.minecraft.world.level.storage.TagValueInput;
 /**
  * Every player has Sanity: 100 when new, 50 once respawned after dying, kept through a relog, and
  * read and moved by {@code /sanity} at permission level 2, held to 0–100. Each test joins its own
- * player, under a name of its own so the command finds it alone, and logs it out again at the end.
+ * player, under a name of its own so the command finds it alone, and logs it out again however the
+ * test ends, so a failure leaves no player on the shared server.
  */
 final class SanityTests {
 
@@ -41,74 +43,95 @@ final class SanityTests {
     }
 
     private static void newPlayer(GameTestHelper helper) {
-        var player = join(helper, profile());
-        expect(helper, 100, run(helper, "sanity get " + player.getPlainTextName()), "a new player's Sanity");
-        leave(helper, player);
+        var profile = profile();
+        var player = join(helper, profile);
+        try {
+            expect(helper, 100, run(helper, "sanity get " + player.getPlainTextName()), "a new player's Sanity");
+        } finally {
+            leave(helper, profile);
+        }
         helper.succeed();
     }
 
     private static void respawned(GameTestHelper helper) {
-        var player = join(helper, profile());
-        run(helper, "sanity set " + player.getPlainTextName() + " 90");
-        var respawned = helper.getLevel().getServer().getPlayerList().respawn(player, false, Entity.RemovalReason.KILLED);
-        expect(helper, 50, run(helper, "sanity get " + respawned.getPlainTextName()), "a respawned player's Sanity");
-        leave(helper, respawned);
+        var profile = profile();
+        var player = join(helper, profile);
+        try {
+            run(helper, "sanity set " + player.getPlainTextName() + " 90");
+            var respawned = playerList(helper).respawn(player, false, Entity.RemovalReason.KILLED);
+            expect(helper, 50, run(helper, "sanity get " + respawned.getPlainTextName()), "a respawned player's Sanity");
+        } finally {
+            leave(helper, profile);
+        }
         helper.succeed();
     }
 
     /** Leaving the End clones the player too, but not by dying, so it keeps its Sanity. */
     private static void leftTheEnd(GameTestHelper helper) {
-        var player = join(helper, profile());
-        run(helper, "sanity set " + player.getPlainTextName() + " 33");
-        var returned = helper.getLevel().getServer().getPlayerList().respawn(player, true, Entity.RemovalReason.CHANGED_DIMENSION);
-        expect(helper, 33, run(helper, "sanity get " + returned.getPlainTextName()), "Sanity after leaving the End");
-        leave(helper, returned);
+        var profile = profile();
+        var player = join(helper, profile);
+        try {
+            run(helper, "sanity set " + player.getPlainTextName() + " 33");
+            var returned = playerList(helper).respawn(player, true, Entity.RemovalReason.CHANGED_DIMENSION);
+            expect(helper, 33, run(helper, "sanity get " + returned.getPlainTextName()), "Sanity after leaving the End");
+        } finally {
+            leave(helper, profile);
+        }
         helper.succeed();
     }
 
-    /** Logging out saves the player to its file and logging in reads it back, as a restart does. */
+    /**
+     * Logging out saves the player to its file and logging in reads it back. A server restart saves
+     * and reads the same file, so this stands for it too.
+     */
     private static void relog(GameTestHelper helper) {
         var profile = profile();
         var player = join(helper, profile);
-        run(helper, "sanity set " + player.getPlainTextName() + " 37.5");
-        leave(helper, player);
-        var back = join(helper, profile);
-        double value = PlayerSanity.get(back).value();
-        leave(helper, back);
-        if (value != 37.5) {
-            helper.fail("Sanity after a relog is " + value + ", not 37.5");
-            return;
+        try {
+            run(helper, "sanity set " + player.getPlainTextName() + " 37.5");
+            leave(helper, profile);
+            double value = PlayerSanity.get(join(helper, profile)).value();
+            if (value != 37.5) {
+                helper.fail("Sanity after a relog is " + value + ", not 37.5");
+            }
+        } finally {
+            leave(helper, profile);
         }
         helper.succeed();
     }
 
     private static void setsAndAdds(GameTestHelper helper) {
-        var player = join(helper, profile());
-        String id = player.getPlainTextName();
-        expect(helper, 42, run(helper, "sanity set " + id + " 42"), "set to 42");
-        expect(helper, 30, run(helper, "sanity add " + id + " -12"), "42 add -12");
-        expect(helper, 100, run(helper, "sanity set " + id + " 150"), "set to 150");
-        expect(helper, 0, run(helper, "sanity add " + id + " -250"), "100 add -250");
-        expect(helper, 100, run(helper, "sanity add " + id + " 250"), "0 add 250");
-        expect(helper, 0, run(helper, "sanity set " + id + " -5"), "set to -5");
-        leave(helper, player);
+        var profile = profile();
+        String name = join(helper, profile).getPlainTextName();
+        try {
+            expect(helper, 42, run(helper, "sanity set " + name + " 42"), "set to 42");
+            expect(helper, 30, run(helper, "sanity add " + name + " -12"), "42 add -12");
+            expect(helper, 100, run(helper, "sanity set " + name + " 150"), "set to 150");
+            expect(helper, 0, run(helper, "sanity add " + name + " -250"), "100 add -250");
+            expect(helper, 100, run(helper, "sanity add " + name + " 250"), "0 add 250");
+            expect(helper, 0, run(helper, "sanity set " + name + " -5"), "set to -5");
+        } finally {
+            leave(helper, profile);
+        }
         helper.succeed();
     }
 
     private static void permission(GameTestHelper helper) {
-        var player = join(helper, profile());
-        String command = "sanity get " + player.getPlainTextName();
-        boolean moderatorRan = true;
+        var profile = profile();
+        String command = "sanity get " + join(helper, profile).getPlainTextName();
         try {
-            run(helper, command, LevelBasedPermissionSet.MODERATOR);
-        } catch (IllegalStateException refused) {
-            moderatorRan = false;
-        }
-        expect(helper, 100, run(helper, command, LevelBasedPermissionSet.GAMEMASTER), "level 2 reads Sanity");
-        leave(helper, player);
-        if (moderatorRan) {
-            helper.fail("/sanity ran at permission level 1");
-            return;
+            boolean moderatorRan = true;
+            try {
+                run(helper, command, LevelBasedPermissionSet.MODERATOR);
+            } catch (IllegalStateException refused) {
+                moderatorRan = false;
+            }
+            if (moderatorRan) {
+                helper.fail("/sanity ran at permission level 1");
+            }
+            expect(helper, 100, run(helper, command, LevelBasedPermissionSet.GAMEMASTER), "level 2 reads Sanity");
+        } finally {
+            leave(helper, profile);
         }
         helper.succeed();
     }
@@ -154,11 +177,19 @@ final class SanityTests {
         }
         var connection = new Connection(PacketFlow.SERVERBOUND);
         new EmbeddedChannel(connection);
-        server.getPlayerList().placeNewPlayer(connection, player, cookie);
+        playerList(helper).placeNewPlayer(connection, player, cookie);
         return player;
     }
 
-    private static void leave(GameTestHelper helper, ServerPlayer player) {
-        helper.getLevel().getServer().getPlayerList().remove(player);
+    /** Logs the profile's player out, whichever player object a respawn left it as, if it is still in. */
+    private static void leave(GameTestHelper helper, GameProfile profile) {
+        var player = playerList(helper).getPlayer(profile.id());
+        if (player != null) {
+            playerList(helper).remove(player);
+        }
+    }
+
+    private static PlayerList playerList(GameTestHelper helper) {
+        return helper.getLevel().getServer().getPlayerList();
     }
 }
