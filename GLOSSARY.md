@@ -44,6 +44,10 @@ _Avoid_: the Dark (A Touch of Darkness's state), darkness
 Anything that raises Sanity; like a drain, it is either continuous or instantaneous.
 _Avoid_: heal, regen, comfort (the feel, not the mechanic)
 
+**Net rate**:
+What a player's continuous drains and restores sum to at a given moment; instantaneous ones never count toward it.
+_Avoid_: trend (how the meter shows it), delta
+
 **Fresh disc**:
 A music disc that is not one of the last two discs a player heard, so a jukebox playing it restores fully.
 
