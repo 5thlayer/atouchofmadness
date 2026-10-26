@@ -44,6 +44,10 @@ _Avoid_: the Dark (A Touch of Darkness's state), darkness
 Anything that raises Sanity; like a drain, it is either continuous or instantaneous.
 _Avoid_: heal, regen, comfort (the feel, not the mechanic)
 
+**Moment**:
+An instantaneous drain or restore: one event, one move of Sanity, such as eating a food, waking from a night's sleep or breaking a flower.
+_Avoid_: event, lump
+
 **Net rate**:
 What a player's continuous drains and restores sum to at a given moment; instantaneous ones never count toward it.
 _Avoid_: trend (how the meter shows it), delta
