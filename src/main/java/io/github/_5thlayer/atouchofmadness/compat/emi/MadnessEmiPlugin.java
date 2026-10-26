@@ -18,6 +18,7 @@ import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.crown.FlowerCrown;
 import io.github._5thlayer.atouchofmadness.moments.Moments;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
+import io.github._5thlayer.atouchofmadness.shadow.ShadowCreatures;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -26,11 +27,11 @@ import net.minecraft.world.item.Item;
 
 /**
  * What the Pillar keeps out of sight, as Info pages in EMI (#19): the Flower Crown, each food with a
- * Sanity Modifier, and music discs. Each page is always listed, but reads "Not yet discovered" until
- * the client is told its player has discovered what it covers, which it checks each frame, so nothing
- * reloads EMI; with discovery off, the client is told everything is. The Flower Crown's recipe is
- * vanilla crafting, which EMI shows unaided. No page names a number the common config sets, which a
- * client's own config needn't match.
+ * Sanity Modifier, music discs, and Umbra, which opens with the kill that leaves it. Each page is
+ * always listed, but reads "Not yet discovered" until the client is told its player has discovered
+ * what it covers, which it checks each frame, so nothing reloads EMI; with discovery off, the client
+ * is told everything is. The Flower Crown's recipe is vanilla crafting, which EMI shows unaided. No
+ * page names a number the common config sets, which a client's own config needn't match.
  *
  * <p>EMI finds this by its annotation and loads it only when EMI is installed; nothing outside this
  * package names an EMI type, so the Pillar plays without it.
@@ -44,6 +45,8 @@ public final class MadnessEmiPlugin implements EmiPlugin {
     public void register(EmiRegistry registry) {
         registry.addRecipe(new InfoPage(page("flower_crown"), List.of(EmiStack.of(FlowerCrown.ITEM.get())),
                 gated(Cause.FLOWER_CROWN, () -> List.of(Component.translatable("atouchofmadness.emi.flower_crown")))));
+        registry.addRecipe(new InfoPage(page("umbra"), List.of(EmiStack.of(ShadowCreatures.UMBRA.get())),
+                gated(Cause.SHADOW_KILL, () -> List.of(Component.translatable("atouchofmadness.emi.umbra")))));
         // The foods the server's data map lists, as it sent them, a datapack's overrides included.
         BuiltInRegistries.ITEM.getDataMap(Moments.SANITY_MODIFIER).entrySet().stream()
                 .filter(entry -> entry.getValue() != 0)

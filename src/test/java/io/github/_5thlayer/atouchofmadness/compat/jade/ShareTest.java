@@ -11,14 +11,9 @@ import org.junit.jupiter.api.Test;
 class ShareTest {
 
     @Test
-    void halfQuarterAndEighthAreVulgarFractions() {
-        assertEquals("½", Share.of(0.5));
-        assertEquals("¼", Share.of(0.25));
-        assertEquals("⅛", Share.of(0.125));
-    }
-
-    @Test
-    void smallerSharesAreOneOverTheirDenominator() {
+    void eachShareIsOneOverItsDenominator() {
+        assertEquals("1/2", Share.of(0.5));
+        assertEquals("1/4", Share.of(0.25));
         assertEquals("1/16", Share.of(1.0 / 16));
         assertEquals("1/1024", Share.of(1.0 / 1024));
     }

@@ -25,10 +25,10 @@ import snownee.jade.api.WailaPlugin;
 import snownee.jade.api.config.IPluginConfig;
 
 /**
- * A playing jukebox in Jade: its disc's freshness for the player looking, "Fresh", or "Stale" with the
- * share of a Fresh disc's restore it gives. The freshness is in that player's Disc History, which only
- * the server has, so it comes through Jade's server data, and the server sends none until that player
- * has discovered the Stale disc (#19).
+ * A playing jukebox in Jade: its disc's freshness for the player looking, a Fresh disc restoring
+ * Sanity in full, or a Stale one with the share of that it restores. The freshness is in that player's
+ * Disc History, which only the server has, so it comes through Jade's server data, and the server
+ * sends none until that player has discovered the Stale disc (#19).
  *
  * <p>Found by Jade's annotation scan and named nowhere else, so Jade stays a soft dependency.
  */
@@ -71,7 +71,7 @@ public final class MadnessJadePlugin implements IWailaPlugin {
         }
     }
 
-    /** The client's half: one line, Fresh or Stale and its share. Client-only. */
+    /** The client's half: one line, Fresh, or Stale and its share. Client-only. */
     private enum Client implements IBlockComponentProvider {
         INSTANCE;
 

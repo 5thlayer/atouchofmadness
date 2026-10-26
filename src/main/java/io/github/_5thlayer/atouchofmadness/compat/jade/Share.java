@@ -9,14 +9,11 @@ final class Share {
     private Share() {
     }
 
-    /** A Stale disc's factor, a power of a half, as a fraction: ½, ¼ and ⅛, then 1/16 and on. */
+    /**
+     * A Stale disc's factor, a power of a half, as a fraction: 1/2, 1/4 and on. Plain digits, since the
+     * game's font draws a glyph such as ½ too small to read.
+     */
     static String of(double factor) {
-        long denominator = Math.round(1 / factor);
-        return switch ((int) Math.min(denominator, Integer.MAX_VALUE)) {
-            case 2 -> "½";
-            case 4 -> "¼";
-            case 8 -> "⅛";
-            default -> "1/" + denominator;
-        };
+        return "1/" + Math.round(1 / factor);
     }
 }
