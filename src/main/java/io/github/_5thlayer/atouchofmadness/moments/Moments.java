@@ -38,9 +38,13 @@ import net.neoforged.neoforge.registries.datamaps.RegisterDataMapTypesEvent;
  */
 public final class Moments {
 
-    /** An item's Sanity Modifier: how far eating it moves Sanity, negative for a drain. An item with none moves nothing. */
+    /**
+     * An item's Sanity Modifier: how far eating it moves Sanity, negative for a drain. An item with none
+     * moves nothing. Synced, so a client shows the server's values, a datapack's overrides included.
+     */
     public static final DataMapType<Item, Integer> SANITY_MODIFIER = DataMapType.builder(
-            Identifier.fromNamespaceAndPath(ATouchOfMadness.MOD_ID, "sanity_modifier"), Registries.ITEM, Codec.INT).build();
+            Identifier.fromNamespaceAndPath(ATouchOfMadness.MOD_ID, "sanity_modifier"), Registries.ITEM, Codec.INT)
+            .synced(Codec.INT, false).build();
 
     /** The config's rules, swapped whole when it loads or reloads, possibly off the server thread. */
     private static volatile MomentRules rules = MomentRules.DEFAULT;

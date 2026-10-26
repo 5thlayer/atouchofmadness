@@ -76,6 +76,7 @@ public final class ATouchOfMadnessGameTests {
         MomentsTests.register(tests);
         NearbyTests.register(tests);
         MusicTests.register(tests);
+        FreshnessTests.register(tests);
         CrownTests.register(tests);
         DiscoveryTests.register(tests);
         ShadowTests.register(tests);

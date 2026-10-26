@@ -45,5 +45,15 @@
   "advancements.atouchofmadness.discovery.uneasy.title": "Uneasy",
   "advancements.atouchofmadness.discovery.uneasy.description": "Your Sanity has slipped below Sane: you are Uneasy.",
   "advancements.atouchofmadness.discovery.insane.title": "Insane",
-  "advancements.atouchofmadness.discovery.insane.description": "Your Sanity is nearly gone: you are Insane."
+  "advancements.atouchofmadness.discovery.insane.description": "Your Sanity is nearly gone: you are Insane.",
+  "atouchofmadness.jade.fresh": "Fresh",
+  "atouchofmadness.jade.stale": "Stale: %s of a fresh disc's restore",
+  "config.jade.plugin_atouchofmadness.freshness": "A playing disc's freshness",
+  "atouchofmadness.emi.undiscovered": "Not yet discovered.",
+  "atouchofmadness.emi.flower_crown": "Restores Sanity while worn in the head slot. It wears only while worn, wilts away once its wear is spent, and can't be repaired.",
+  "atouchofmadness.emi.food.restores": "Eating it restores %s Sanity.",
+  "atouchofmadness.emi.food.drains": "Eating it drains %s Sanity.",
+  "atouchofmadness.emi.food.none": "Eating it moves no Sanity.",
+  "atouchofmadness.emi.music": "A jukebox playing one nearby restores Sanity.",
+  "atouchofmadness.emi.music.stale_disc": "One of the last two discs you heard restores half what its last play did; two other discs in between freshen it."
 }

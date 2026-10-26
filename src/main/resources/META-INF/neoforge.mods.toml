@@ -27,3 +27,21 @@ type = "required"
 versionRange = "[${minecraft_version}]"
 ordering = "NONE"
 side = "BOTH"
+
+# Shows a playing jukebox's disc freshness, once discovered, in Jade's tooltip (#19). Not required: its
+# plugin is only loaded by Jade. The range is the Jade the plugin is compiled against.
+[[dependencies.${mod_id}]]
+modId = "jade"
+type = "optional"
+versionRange = "[26.1.11,)"
+ordering = "NONE"
+side = "BOTH"
+
+# Shows the Pillar's information pages, as far as the player has discovered them, in EMI (#19). Not
+# required: its plugin is only loaded by EMI.
+[[dependencies.${mod_id}]]
+modId = "emi"
+type = "optional"
+versionRange = "[0,)"
+ordering = "NONE"
+side = "CLIENT"

@@ -12,3 +12,52 @@ libworks {
     // ADR-0002), so its game tests run without libworks-gametest.
 }
 
+
+repositories {
+    // EMI for 26.1 is an unofficial port, published on CurseForge only.
+    maven {
+        url = 'https://cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
+    // Jade.
+    maven {
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
+}
+
+// Mods the dev client loads alongside the Pillar, to see its Jade tooltip and EMI pages by hand. 26.1
+// has no per-run classpath, so they go into the client's mods folder, which holds only what is listed
+// here; the game tests run from run/gametest and never load them, so they still prove the Pillar plays
+// alone in vanilla. The jar nests neither.
+configurations {
+    clientMods { transitive = false }
+}
+
+def syncClientMods = tasks.register('syncClientMods', Sync) {
+    from configurations.clientMods
+    into layout.projectDirectory.dir('run/mods')
+}
+
+tasks.named('runClient') { dependsOn syncClientMods }
+
+dependencies {
+    // Jade for 26.1.2 is built on NeoForge 26.1.2.76, so it runs on our .77. Jade finds the Pillar's
+    // plugin by its annotation, and only compat/jade names its types, so the Pillar runs without it (#19).
+    compileOnly 'maven.modrinth:jade:26.1.11+neoforge'
+    clientMods 'maven.modrinth:jade:26.1.11+neoforge'
+    // EMI for 26.1 is the unofficial port, as no official EMI exists for it. EMI finds the Pillar's
+    // plugin by its annotation, and only compat/emi names its types, so the Pillar runs without it (#19).
+    compileOnly 'curse.maven:emi-unofficial-port-1544558:8630349'
+    clientMods 'curse.maven:emi-unofficial-port-1544558:8630349'
+}
+
+neoForge {
+    runs {
+        // EMI's 26.1 port still carries @OnlyIn, and the dev client halts on a warning screen over it
+        // that production never shows. Only the client loads EMI.
+        client {
+            systemProperty 'neoforge.warnings.onlyin.hide', 'true'
+        }
+    }
+}

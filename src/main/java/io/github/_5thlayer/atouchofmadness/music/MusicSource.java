@@ -4,12 +4,14 @@
 package io.github._5thlayer.atouchofmadness.music;
 
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.function.Supplier;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
+import io.github._5thlayer.atouchofmadness.discovery.Discovery;
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
@@ -112,16 +114,34 @@ public final class MusicSource {
             return Rate.NONE;
         }
         var jukebox = found.get();
-        var disc = JukeboxSong.fromStack(jukebox.getTheItem()).flatMap(Holder::unwrapKey);
+        var disc = disc(jukebox);
         if (disc.isEmpty()) {
             return Rate.NONE;
         }
-        var heard = player.getData(HISTORY).hear(jukeboxId(jukebox), songId(jukebox, player.level()),
-                disc.get().identifier().toString());
+        var heard = player.getData(HISTORY).hear(jukeboxId(jukebox), songId(jukebox, player.level()), disc.get());
         player.setData(HISTORY, heard.history());
         double perTick = -EnvironmentRules.drainPerTick(current.restore(heard.factor()));
         // A Stale disc's play is music too.
         return heard.factor() < 1 ? Rate.of(perTick, Cause.MUSIC, Cause.STALE_DISC) : Rate.of(perTick, Cause.MUSIC);
+    }
+
+    /**
+     * The freshness factor of the play a jukebox plays, for this player, as far as they may be shown
+     * it: 1 for a Fresh disc, half its last play's for a Stale one, and nothing while the jukebox plays
+     * no disc or until the player has discovered the Stale disc, before which even "Fresh" would give
+     * away that freshness exists. It records nothing in their history, though it stamps a song with no
+     * id as hearing it would, and is the same whether or not the player is in the jukebox's range.
+     */
+    public static OptionalDouble shownFreshness(ServerPlayer player, JukeboxBlockEntity jukebox) {
+        if (!jukebox.getSongPlayer().isPlaying() || !Discovery.isKnown(player, Cause.STALE_DISC)) {
+            return OptionalDouble.empty();
+        }
+        var disc = disc(jukebox);
+        if (disc.isEmpty()) {
+            return OptionalDouble.empty();
+        }
+        // The history the player would have once they heard it is thrown away: only the factor is wanted.
+        return OptionalDouble.of(player.getData(HISTORY).hear(jukeboxId(jukebox), songId(jukebox, player.level()), disc.get()).factor());
     }
 
     /**
@@ -137,6 +157,11 @@ public final class MusicSource {
         long id = level.getRandom().nextLong();
         jukebox.setData(SONG_ID, id);
         return id;
+    }
+
+    /** The disc a jukebox holds, by its jukebox song's id, if it holds one. */
+    private static Optional<String> disc(JukeboxBlockEntity jukebox) {
+        return JukeboxSong.fromStack(jukebox.getTheItem()).flatMap(Holder::unwrapKey).map(key -> key.identifier().toString());
     }
 
     /** A jukebox's id in a history: its dimension and position. */
