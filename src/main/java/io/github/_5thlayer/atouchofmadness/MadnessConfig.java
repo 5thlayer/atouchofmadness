@@ -3,11 +3,15 @@
 
 package io.github._5thlayer.atouchofmadness;
 
+import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.Sanity;
 import io.github._5thlayer.atouchofmadness.sanity.SanityRules;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-/** The common config, {@code atouchofmadness-common.toml}: where Sanity starts and where its stages begin. */
+/**
+ * The common config, {@code atouchofmadness-common.toml}: where Sanity starts and where its stages
+ * begin, and the drains of where a player stands.
+ */
 public final class MadnessConfig {
 
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
@@ -34,6 +38,31 @@ public final class MadnessConfig {
 
     static {
         BUILDER.pop();
+        BUILDER.comment("The drains of where a player stands: each in Sanity a minute, and the Low-light threshold.").push("environment");
+    }
+
+    private static final ModConfigSpec.IntValue LOW_LIGHT_BELOW = BUILDER
+            .comment("Light at a player's eyes below this is Low light, unless a full moon is in the sky they can see.")
+            .defineInRange("lowLightBelow", EnvironmentRules.DEFAULT.lowLightBelow(), 0, 16);
+
+    private static final ModConfigSpec.DoubleValue LOW_LIGHT = BUILDER
+            .comment("The drain while a player is in Low light.")
+            .defineInRange("lowLight", EnvironmentRules.DEFAULT.lowLight(), 0, Sanity.MAX);
+
+    private static final ModConfigSpec.DoubleValue FREEZING = BUILDER
+            .comment("The drain while a player is freezing, in powder snow or from any other cold.")
+            .defineInRange("freezing", EnvironmentRules.DEFAULT.freezing(), 0, Sanity.MAX);
+
+    private static final ModConfigSpec.DoubleValue WET = BUILDER
+            .comment("The drain while a player is in water or rain.")
+            .defineInRange("wet", EnvironmentRules.DEFAULT.wet(), 0, Sanity.MAX);
+
+    private static final ModConfigSpec.DoubleValue UNSETTLING = BUILDER
+            .comment("The drain while a player is in a dimension type in #atouchofmadness:unsettling, the Nether by default.")
+            .defineInRange("unsettling", EnvironmentRules.DEFAULT.unsettling(), 0, Sanity.MAX);
+
+    static {
+        BUILDER.pop();
     }
 
     public static final ModConfigSpec SPEC = BUILDER.build();
@@ -49,5 +78,13 @@ public final class MadnessConfig {
         double saneAbove = SANE_ABOVE.get();
         return new SanityRules(new Sanity(START.get()), new Sanity(RESPAWN.get()), saneAbove,
                 Math.min(INSANE_BELOW.get(), saneAbove));
+    }
+
+    /** The defaults until the config loads. */
+    public static EnvironmentRules environmentRules() {
+        if (!SPEC.isLoaded()) {
+            return EnvironmentRules.DEFAULT;
+        }
+        return new EnvironmentRules(LOW_LIGHT_BELOW.get(), LOW_LIGHT.get(), FREEZING.get(), WET.get(), UNSETTLING.get());
     }
 }

@@ -13,27 +13,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.logging.LogUtils;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Stage;
 import io.github._5thlayer.atouchofmadness.sanity.StageChange;
-import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.gametest.framework.GameTestInfo;
-import net.minecraft.gametest.framework.GameTestListener;
-import net.minecraft.gametest.framework.GameTestRunner;
-import net.minecraft.network.Connection;
-import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.CommonListenerCookie;
 import net.minecraft.server.permissions.LevelBasedPermissionSet;
 import net.minecraft.server.permissions.PermissionSet;
-import net.minecraft.server.players.PlayerList;
-import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.storage.TagValueInput;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.config.ModConfig;
@@ -102,8 +91,8 @@ final class SanityTests {
     }
 
     private static void heardJoin(GameTestHelper helper) {
-        var profile = profile();
-        join(helper, profile);
+        var profile = TestPlayers.profile();
+        TestPlayers.join(helper, profile);
         try {
             expectHeard(helper, profile, List.of(change(null, Stage.SANE)));
         } finally {
@@ -114,8 +103,8 @@ final class SanityTests {
 
     /** An instantaneous move across a threshold is heard; one within a Stage is not. */
     private static void heardCommand(GameTestHelper helper) {
-        var profile = profile();
-        String name = join(helper, profile).getPlainTextName();
+        var profile = TestPlayers.profile();
+        String name = TestPlayers.join(helper, profile).getPlainTextName();
         try {
             run(helper, "sanity set " + name + " 60");
             run(helper, "sanity set " + name + " 10");
@@ -131,12 +120,12 @@ final class SanityTests {
 
     /** Respawning at 50 is heard from Insane, and not from Uneasy, where it already was. */
     private static void heardRespawn(GameTestHelper helper) {
-        var profile = profile();
-        var player = join(helper, profile);
+        var profile = TestPlayers.profile();
+        var player = TestPlayers.join(helper, profile);
         try {
             run(helper, "sanity set " + player.getPlainTextName() + " 10");
-            var respawned = playerList(helper).respawn(player, false, Entity.RemovalReason.KILLED);
-            playerList(helper).respawn(respawned, false, Entity.RemovalReason.KILLED);
+            var respawned = TestPlayers.playerList(helper).respawn(player, false, Entity.RemovalReason.KILLED);
+            TestPlayers.playerList(helper).respawn(respawned, false, Entity.RemovalReason.KILLED);
             expectHeard(helper, profile, List.of(change(null, Stage.SANE), change(Stage.SANE, Stage.INSANE),
                     change(Stage.INSANE, Stage.UNEASY)));
         } finally {
@@ -150,8 +139,8 @@ final class SanityTests {
      * Sane again. The other tests' players stay in their Stage under either line.
      */
     private static void heardReload(GameTestHelper helper) {
-        var profile = profile();
-        var player = join(helper, profile);
+        var profile = TestPlayers.profile();
+        var player = TestPlayers.join(helper, profile);
         var saneAbove = (ModConfigSpec.DoubleValue) MadnessConfig.SPEC.getValues().get(List.of("sanity", "saneAbove"));
         double original = saneAbove.get();
         try {
@@ -172,9 +161,9 @@ final class SanityTests {
     }
 
     private static void listenerCannotMove(GameTestHelper helper) {
-        var profile = profile();
+        var profile = TestPlayers.profile();
         MEDDLERS.add(profile.id());
-        var player = join(helper, profile);
+        var player = TestPlayers.join(helper, profile);
         try {
             if (!REFUSED.contains(profile.id())) {
                 helper.fail("a Stage-change listener moved Sanity unrefused");
@@ -191,17 +180,20 @@ final class SanityTests {
 
     /**
      * A drain of 0.05 a tick takes 1 at each of the player's evaluations, which come 20 ticks apart
-     * with Sanity still between them. A connection would tick the player each server tick; this one
-     * doesn't, so the test does. After a relog the Net rate is 0 again, since it is never saved.
+     * with Sanity still between them. The test ticks the player itself. After a relog the Net rate is
+     * 0 again, since it is never saved.
      */
     private static void onceASecond(GameTestHelper helper) {
-        var profile = profile();
-        helper.testInfo.addListener(leaveWhenDone(helper, profile));
-        join(helper, profile);
+        var profile = TestPlayers.profile();
+        TestPlayers.whenDone(helper, () -> {
+            RATES.remove(profile.id());
+            leave(helper, profile);
+        });
+        TestPlayers.join(helper, profile);
         RATES.put(profile.id(), -0.05);
         long[] firstEvaluation = {-1};
         helper.onEachTick(() -> {
-            var player = playerList(helper).getPlayer(profile.id());
+            var player = TestPlayers.playerList(helper).getPlayer(profile.id());
             player.doTick();
             double value = PlayerSanity.get(player).value();
             long tick = helper.getTick();
@@ -226,40 +218,12 @@ final class SanityTests {
                 helper.fail("Sanity is " + value + " an evaluation later, not 98");
             }
             leave(helper, profile);
-            double relogged = PlayerSanity.netRate(join(helper, profile));
+            double relogged = PlayerSanity.netRate(TestPlayers.join(helper, profile));
             if (relogged != 0) {
                 helper.fail("the Net rate after a relog is " + relogged + ", not 0");
             }
             helper.succeed();
         });
-    }
-
-    /** Logs the profile's player out and drops its drain when the test passes or fails, at whatever tick. */
-    private static GameTestListener leaveWhenDone(GameTestHelper helper, GameProfile profile) {
-        return new GameTestListener() {
-            @Override
-            public void testStructureLoaded(GameTestInfo testInfo) {
-            }
-
-            @Override
-            public void testPassed(GameTestInfo testInfo, GameTestRunner runner) {
-                done();
-            }
-
-            @Override
-            public void testFailed(GameTestInfo testInfo, GameTestRunner runner) {
-                done();
-            }
-
-            @Override
-            public void testAddedForRerun(GameTestInfo original, GameTestInfo copy, GameTestRunner runner) {
-            }
-
-            private void done() {
-                RATES.remove(profile.id());
-                leave(helper, profile);
-            }
-        };
     }
 
     /** Sets the config's Sane line in memory, without saving the file, and reloads it as a change to the file would. */
@@ -281,8 +245,8 @@ final class SanityTests {
     }
 
     private static void newPlayer(GameTestHelper helper) {
-        var profile = profile();
-        var player = join(helper, profile);
+        var profile = TestPlayers.profile();
+        var player = TestPlayers.join(helper, profile);
         try {
             expect(helper, 100, run(helper, "sanity get " + player.getPlainTextName()), "a new player's Sanity");
         } finally {
@@ -292,11 +256,11 @@ final class SanityTests {
     }
 
     private static void respawned(GameTestHelper helper) {
-        var profile = profile();
-        var player = join(helper, profile);
+        var profile = TestPlayers.profile();
+        var player = TestPlayers.join(helper, profile);
         try {
             run(helper, "sanity set " + player.getPlainTextName() + " 90");
-            var respawned = playerList(helper).respawn(player, false, Entity.RemovalReason.KILLED);
+            var respawned = TestPlayers.playerList(helper).respawn(player, false, Entity.RemovalReason.KILLED);
             expect(helper, 50, run(helper, "sanity get " + respawned.getPlainTextName()), "a respawned player's Sanity");
         } finally {
             leave(helper, profile);
@@ -306,11 +270,11 @@ final class SanityTests {
 
     /** Leaving the End clones the player too, but not by dying, so it keeps its Sanity. */
     private static void leftTheEnd(GameTestHelper helper) {
-        var profile = profile();
-        var player = join(helper, profile);
+        var profile = TestPlayers.profile();
+        var player = TestPlayers.join(helper, profile);
         try {
             run(helper, "sanity set " + player.getPlainTextName() + " 33");
-            var returned = playerList(helper).respawn(player, true, Entity.RemovalReason.CHANGED_DIMENSION);
+            var returned = TestPlayers.playerList(helper).respawn(player, true, Entity.RemovalReason.CHANGED_DIMENSION);
             expect(helper, 33, run(helper, "sanity get " + returned.getPlainTextName()), "Sanity after leaving the End");
         } finally {
             leave(helper, profile);
@@ -323,12 +287,12 @@ final class SanityTests {
      * and reads the same file, so this stands for it too.
      */
     private static void relog(GameTestHelper helper) {
-        var profile = profile();
-        var player = join(helper, profile);
+        var profile = TestPlayers.profile();
+        var player = TestPlayers.join(helper, profile);
         try {
             run(helper, "sanity set " + player.getPlainTextName() + " 37.5");
             leave(helper, profile);
-            double value = PlayerSanity.get(join(helper, profile)).value();
+            double value = PlayerSanity.get(TestPlayers.join(helper, profile)).value();
             if (value != 37.5) {
                 helper.fail("Sanity after a relog is " + value + ", not 37.5");
             }
@@ -339,8 +303,8 @@ final class SanityTests {
     }
 
     private static void setsAndAdds(GameTestHelper helper) {
-        var profile = profile();
-        String name = join(helper, profile).getPlainTextName();
+        var profile = TestPlayers.profile();
+        String name = TestPlayers.join(helper, profile).getPlainTextName();
         try {
             expect(helper, 42, run(helper, "sanity set " + name + " 42"), "set to 42");
             expect(helper, 30, run(helper, "sanity add " + name + " -12"), "42 add -12");
@@ -355,8 +319,8 @@ final class SanityTests {
     }
 
     private static void permission(GameTestHelper helper) {
-        var profile = profile();
-        String command = "sanity get " + join(helper, profile).getPlainTextName();
+        var profile = TestPlayers.profile();
+        String command = "sanity get " + TestPlayers.join(helper, profile).getPlainTextName();
         try {
             boolean moderatorRan = true;
             try {
@@ -372,12 +336,6 @@ final class SanityTests {
             leave(helper, profile);
         }
         helper.succeed();
-    }
-
-    /** A fresh player's profile: a UUID-based name, since a UUID selector is refused as one that could pick other entities. */
-    private static GameProfile profile() {
-        var id = UUID.randomUUID();
-        return new GameProfile(id, "s" + id.toString().replace("-", "").substring(0, 15));
     }
 
     private static int run(GameTestHelper helper, String command) {
@@ -400,35 +358,8 @@ final class SanityTests {
         }
     }
 
-    /**
-     * A survival player logged in on the test's server, as {@code makeMockServerPlayerInLevel} does it,
-     * with what the player's file holds read first, as a login's {@code PrepareSpawnTask} does.
-     */
-    private static ServerPlayer join(GameTestHelper helper, GameProfile profile) {
-        var server = helper.getLevel().getServer();
-        var cookie = CommonListenerCookie.createInitial(profile, false);
-        var player = new ServerPlayer(server, helper.getLevel(), profile, cookie.clientInformation());
-        try (var reporter = new ProblemReporter.ScopedCollector(player.problemPath(), LogUtils.getLogger())) {
-            server.getPlayerList().loadPlayerData(player.nameAndId())
-                    .map(tag -> TagValueInput.create(reporter, server.registryAccess(), tag))
-                    .ifPresent(player::load);
-        }
-        var connection = new Connection(PacketFlow.SERVERBOUND);
-        new EmbeddedChannel(connection);
-        playerList(helper).placeNewPlayer(connection, player, cookie);
-        return player;
-    }
-
-    /** Logs the profile's player out, whichever player object a respawn left it as, if it is still in. */
     private static void leave(GameTestHelper helper, GameProfile profile) {
-        var player = playerList(helper).getPlayer(profile.id());
-        if (player != null) {
-            playerList(helper).remove(player);
-        }
+        TestPlayers.leave(helper, profile);
         HEARD.remove(profile.id());
-    }
-
-    private static PlayerList playerList(GameTestHelper helper) {
-        return helper.getLevel().getServer().getPlayerList();
     }
 }

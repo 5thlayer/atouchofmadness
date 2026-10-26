@@ -3,7 +3,6 @@
 
 package io.github._5thlayer.atouchofmadness.gametest;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 import com.mojang.serialization.MapCodec;
@@ -39,8 +38,12 @@ public final class ATouchOfMadnessGameTests {
     private static final DeferredRegister<MapCodec<? extends GameTestInstance>> TEST_TYPES =
             DeferredRegister.create(Registries.TEST_INSTANCE_TYPE, ATouchOfMadness.MOD_ID);
 
+    private static final DeferredRegister<MapCodec<? extends TestEnvironmentDefinition<?>>> ENVIRONMENT_TYPES =
+            DeferredRegister.create(Registries.TEST_ENVIRONMENT_DEFINITION_TYPE, ATouchOfMadness.MOD_ID);
+
     static {
         TEST_TYPES.register("code", () -> CodeGameTest.CODEC);
+        ENVIRONMENT_TYPES.register("sky", () -> Sky.CODEC);
     }
 
     private ATouchOfMadnessGameTests() {
@@ -53,32 +56,54 @@ public final class ATouchOfMadnessGameTests {
 
     public static void register(IEventBus modBus) {
         TEST_TYPES.register(modBus);
+        ENVIRONMENT_TYPES.register(modBus);
         SanityTests.listen(modBus);
         // Posted only when game tests are enabled, which a production game never is.
         modBus.addListener(ATouchOfMadnessGameTests::registerTests);
     }
 
     private static void registerTests(RegisterGameTestsEvent event) {
-        // Registered rather than borrowed, since the event hands out no lookup for vanilla's.
-        var environment = event.registerEnvironment(id("default"), new TestEnvironmentDefinition.AllOf(List.of()));
-        var tests = new Registrar(event, environment);
+        // Noon and clear, so no drain of where a player stands applies on the platform's open floor.
+        var tests = Registrar.of(event, "default", new Sky(Sky.NOON, TestEnvironmentDefinition.Weather.Type.CLEAR));
         LoadTests.register(tests);
         GameTestPackTests.register(tests);
         CreativeTabTests.register(tests);
         SanityTests.register(tests);
+        EnvironmentTests.register(tests);
     }
 
     private static Identifier id(String path) {
         return Identifier.fromNamespaceAndPath(ATouchOfMadness.MOD_ID, path);
     }
 
-    /** What a test class is handed: a name, a tick budget and a body per test. */
-    record Registrar(RegisterGameTestsEvent event, Holder<TestEnvironmentDefinition<?>> environment) {
+    /**
+     * What a test class is handed: a name, a tick budget and a body per test, run in the default
+     * environment or one of its own. Tests in different environments run in different batches. A test
+     * is roofed with barriers, which let light through but not rain, unless it has sky access.
+     */
+    record Registrar(RegisterGameTestsEvent event, Holder<TestEnvironmentDefinition<?>> environment, boolean skyAccess) {
+
+        /** A Registrar whose tests run in this environment, registered under this name, with no sky access. */
+        static Registrar of(RegisterGameTestsEvent event, String name, TestEnvironmentDefinition<?> definition) {
+            return new Registrar(event, null, false).under(name, definition);
+        }
+
+        /** The tests registered through the result run in this environment, registered under this name. */
+        Registrar under(String name, TestEnvironmentDefinition<?> definition) {
+            // Registered rather than borrowed, since the event hands out no lookup for vanilla's.
+            return new Registrar(event, event.registerEnvironment(id(name), definition), skyAccess);
+        }
+
+        /** The tests registered through the result have no barrier roof, so rain reaches them. */
+        Registrar withSkyAccess() {
+            return new Registrar(event, environment, true);
+        }
 
         void test(String name, int maxTicks, Consumer<GameTestHelper> body) {
             var id = id(name);
             CodeGameTest.define(id, body);
-            event.registerTest(id, new CodeGameTest(id, new TestData<>(environment, PLATFORM, maxTicks, 0, true, Rotation.NONE)));
+            event.registerTest(id, new CodeGameTest(id, new TestData<>(environment, PLATFORM, maxTicks, 0, true, Rotation.NONE,
+                    false, 1, 1, skyAccess, 0)));
         }
     }
 }
