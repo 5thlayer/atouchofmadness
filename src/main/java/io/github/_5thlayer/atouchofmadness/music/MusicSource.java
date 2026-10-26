@@ -11,7 +11,9 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
+import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
+import io.github._5thlayer.atouchofmadness.sanity.Rate;
 import net.minecraft.core.Holder;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
@@ -103,21 +105,23 @@ public final class MusicSource {
      * The restore of the play the player hears now, if any. Unlike other sources it also records the
      * play in their history, which only the once-a-second evaluation calls it to do.
      */
-    private static double music(ServerPlayer player) {
+    private static Rate music(ServerPlayer player) {
         var current = rules;
         var found = nearestPlaying(player, current.range());
         if (found.isEmpty()) {
-            return 0;
+            return Rate.NONE;
         }
         var jukebox = found.get();
         var disc = JukeboxSong.fromStack(jukebox.getTheItem()).flatMap(Holder::unwrapKey);
         if (disc.isEmpty()) {
-            return 0;
+            return Rate.NONE;
         }
         var heard = player.getData(HISTORY).hear(jukeboxId(jukebox), songId(jukebox, player.level()),
                 disc.get().identifier().toString());
         player.setData(HISTORY, heard.history());
-        return -EnvironmentRules.drainPerTick(current.restore(heard.factor()));
+        double perTick = -EnvironmentRules.drainPerTick(current.restore(heard.factor()));
+        // A Stale disc's play is music too.
+        return heard.factor() < 1 ? Rate.of(perTick, Cause.MUSIC, Cause.STALE_DISC) : Rate.of(perTick, Cause.MUSIC);
     }
 
     /**

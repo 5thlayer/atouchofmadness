@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/root",
+  "criteria": {
+    "food": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "food"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.food.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:golden_apple"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.food.title"
+    }
+  },
+  "requirements": [
+    [
+      "food"
+    ]
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/uneasy",
+  "criteria": {
+    "insane": {
+      "trigger": "atouchofmadness:stage_reached",
+      "conditions": {
+        "stage": "insane"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.insane.description"
+    },
+    "frame": "goal",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:wither_skeleton_skull"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.insane.title"
+    }
+  },
+  "requirements": [
+    [
+      "insane"
+    ]
+  ]
+}

@@ -3,7 +3,9 @@
 
 package io.github._5thlayer.atouchofmadness.sanity;
 
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * What {@link PlayerSanity} keeps in memory for one player and never saves: the Net rate of the last
@@ -23,13 +25,27 @@ final class SanityTracker {
      * Sums the rates of the continuous drains (negative) and restores (positive) that apply into the
      * Net rate, and returns Sanity moved by it for each of the ticks the evaluation covers.
      */
-    Sanity evaluate(Sanity sanity, double[] rates, int ticks) {
+    Sanity evaluate(Sanity sanity, Rate[] rates, int ticks) {
         double sum = 0;
-        for (double rate : rates) {
-            sum += rate;
+        for (var rate : rates) {
+            sum += rate.perTick();
         }
         netRate = sum;
         return sanity.add(sum * ticks);
+    }
+
+    /**
+     * The causes of the rates that move Sanity from where it stands: a drain's while it is above empty,
+     * a restore's while it is below full, whatever the other rates do, so two that cancel both move it.
+     */
+    static Set<Cause> moving(Sanity sanity, Rate[] rates) {
+        var moving = EnumSet.noneOf(Cause.class);
+        for (var rate : rates) {
+            if (rate.perTick() < 0 && sanity.value() > Sanity.MIN || rate.perTick() > 0 && sanity.value() < Sanity.MAX) {
+                moving.addAll(rate.causes());
+            }
+        }
+        return moving;
     }
 
     /**

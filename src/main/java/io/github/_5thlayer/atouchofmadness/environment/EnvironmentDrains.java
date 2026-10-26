@@ -5,7 +5,9 @@ package io.github._5thlayer.atouchofmadness.environment;
 
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
+import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
+import io.github._5thlayer.atouchofmadness.sanity.Rate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -38,10 +40,10 @@ public final class EnvironmentDrains {
     public static void register(IEventBus modBus) {
         modBus.addListener(ModConfigEvent.Loading.class, EnvironmentDrains::configChanged);
         modBus.addListener(ModConfigEvent.Reloading.class, EnvironmentDrains::configChanged);
-        PlayerSanity.addSource(player -> drainIf(isInLowLight(player), rules.lowLight()));
-        PlayerSanity.addSource(player -> drainIf(player.getTicksFrozen() > 0, rules.freezing()));
-        PlayerSanity.addSource(player -> drainIf(player.isInWaterOrRain(), rules.wet()));
-        PlayerSanity.addSource(player -> drainIf(player.level().dimensionTypeRegistration().is(UNSETTLING), rules.unsettling()));
+        PlayerSanity.addSource(player -> drainIf(isInLowLight(player), rules.lowLight(), Cause.LOW_LIGHT));
+        PlayerSanity.addSource(player -> drainIf(player.getTicksFrozen() > 0, rules.freezing(), Cause.FREEZING));
+        PlayerSanity.addSource(player -> drainIf(player.isInWaterOrRain(), rules.wet(), Cause.WET));
+        PlayerSanity.addSource(player -> drainIf(player.level().dimensionTypeRegistration().is(UNSETTLING), rules.unsettling(), Cause.UNSETTLING_DIMENSION));
     }
 
     /**
@@ -64,8 +66,8 @@ public final class EnvironmentDrains {
         return type.timelines().stream().anyMatch(timeline -> timeline.value().attributes().contains(EnvironmentAttributes.MOON_PHASE));
     }
 
-    private static double drainIf(boolean applies, double perMinute) {
-        return applies ? EnvironmentRules.drainPerTick(perMinute) : 0;
+    private static Rate drainIf(boolean applies, double perMinute, Cause cause) {
+        return applies ? Rate.of(EnvironmentRules.drainPerTick(perMinute), cause) : Rate.NONE;
     }
 
     private static void configChanged(ModConfigEvent event) {

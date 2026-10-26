@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/root",
+  "criteria": {
+    "wet": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "wet"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.wet.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:water_bucket"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.wet.title"
+    }
+  },
+  "requirements": [
+    [
+      "wet"
+    ]
+  ]
+}

@@ -6,6 +6,7 @@ package io.github._5thlayer.atouchofmadness;
 import io.github._5thlayer.atouchofmadness.crown.FlowerCrown;
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentDrains;
 import io.github._5thlayer.atouchofmadness.moments.Moments;
+import io.github._5thlayer.atouchofmadness.discovery.Discovery;
 import io.github._5thlayer.atouchofmadness.music.MusicSource;
 import io.github._5thlayer.atouchofmadness.nearby.NearbySources;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
@@ -17,7 +18,7 @@ import net.neoforged.fml.config.ModConfig;
 /**
  * The Pillar's entry point. It registers the Pillar's own creative tab, each player's Sanity, the
  * drains of where they stand, the drain and restore of who is near, the restore of music, the Flower
- * Crown, the moments that move it at once and the common config. The game tests hook themselves in from the {@code gametest} source set, which
+ * Crown, the moments that move it at once, discovery and the common config. The game tests hook themselves in from the {@code gametest} source set, which
  * never ships (libworks ADR 0011).
  */
 @Mod(ATouchOfMadness.MOD_ID)
@@ -35,5 +36,6 @@ public final class ATouchOfMadness {
         MusicSource.register(modBus);
         FlowerCrown.register(modBus);
         Moments.register(modBus);
+        Discovery.register(modBus);
     }
 }

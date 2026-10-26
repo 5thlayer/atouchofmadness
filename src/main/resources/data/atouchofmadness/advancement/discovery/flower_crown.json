@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/root",
+  "criteria": {
+    "flower_crown": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "flower_crown"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.flower_crown.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "atouchofmadness:flower_crown"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.flower_crown.title"
+    }
+  },
+  "requirements": [
+    [
+      "flower_crown"
+    ]
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/root",
+  "criteria": {
+    "unsettling_dimension": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "unsettling_dimension"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.unsettling_dimension.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:netherrack"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.unsettling_dimension.title"
+    }
+  },
+  "requirements": [
+    [
+      "unsettling_dimension"
+    ]
+  ]
+}

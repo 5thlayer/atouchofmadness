@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/root",
+  "criteria": {
+    "sleep": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "sleep"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.sleep.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:red_bed"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.sleep.title"
+    }
+  },
+  "requirements": [
+    [
+      "sleep"
+    ]
+  ]
+}

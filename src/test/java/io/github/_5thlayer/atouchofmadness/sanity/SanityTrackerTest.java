@@ -5,14 +5,22 @@ package io.github._5thlayer.atouchofmadness.sanity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import static io.github._5thlayer.atouchofmadness.sanity.Cause.COMPANY;
+import static io.github._5thlayer.atouchofmadness.sanity.Cause.LOW_LIGHT;
+import static io.github._5thlayer.atouchofmadness.sanity.Cause.MUSIC;
+import static io.github._5thlayer.atouchofmadness.sanity.Cause.STALE_DISC;
+
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
 /**
  * An evaluation sums the rates into the Net rate and moves Sanity by it for every tick it covers, held
  * to 0–100. Each observation reports a Stage change only when the Stage differs from the last one
- * reported, under whichever rules apply then; the first reports one from no Stage.
+ * reported, under whichever rules apply then; the first reports one from no Stage. A rate moves Sanity,
+ * and so names its causes, when it is not 0 and Sanity is not already at the end it pushes toward,
+ * whatever the other rates do.
  */
 class SanityTrackerTest {
 
@@ -26,22 +34,22 @@ class SanityTrackerTest {
     @Test
     void anEvaluationMovesSanityByTheSumOfItsRatesForEachTick() {
         var tracker = new SanityTracker();
-        assertEquals(55, tracker.evaluate(new Sanity(60), new double[] {-0.5, 0.25}, 20).value());
+        assertEquals(55, tracker.evaluate(new Sanity(60), rates(-0.5, 0.25), 20).value());
         assertEquals(-0.25, tracker.netRate());
     }
 
     @Test
     void anEvaluationIsHeldToTheRange() {
         var tracker = new SanityTracker();
-        assertEquals(0, tracker.evaluate(new Sanity(5), new double[] {-1}, 20).value());
-        assertEquals(100, tracker.evaluate(new Sanity(95), new double[] {1}, 20).value());
+        assertEquals(0, tracker.evaluate(new Sanity(5), rates(-1), 20).value());
+        assertEquals(100, tracker.evaluate(new Sanity(95), rates(1), 20).value());
     }
 
     @Test
     void anEvaluationWithNoRatesLeavesSanityAndANetRateOfZero() {
         var tracker = new SanityTracker();
-        tracker.evaluate(new Sanity(60), new double[] {-1}, 20);
-        assertEquals(60, tracker.evaluate(new Sanity(60), new double[0], 20).value());
+        tracker.evaluate(new Sanity(60), rates(-1), 20);
+        assertEquals(60, tracker.evaluate(new Sanity(60), rates(), 20).value());
         assertEquals(0, tracker.netRate());
     }
 
@@ -81,5 +89,41 @@ class SanityTrackerTest {
         var stricter = new SanityRules(new Sanity(100), new Sanity(50), 70, 20);
         assertEquals(Optional.of(new StageChange(Optional.of(Stage.SANE), Stage.UNEASY)),
                 tracker.observe(new Sanity(60), stricter));
+    }
+
+    @Test
+    void aDrainAboveEmptyAndARestoreBelowFullMoveSanity() {
+        assertEquals(Set.of(LOW_LIGHT, COMPANY), SanityTracker.moving(new Sanity(50),
+                new Rate[] {Rate.of(-0.1, LOW_LIGHT), Rate.of(0.1, COMPANY)}));
+    }
+
+    @Test
+    void aRestoreAtFullMovesNothingEvenWhileADrainMovesSanity() {
+        assertEquals(Set.of(LOW_LIGHT), SanityTracker.moving(new Sanity(100),
+                new Rate[] {Rate.of(-0.1, LOW_LIGHT), Rate.of(0.5, COMPANY)}));
+    }
+
+    @Test
+    void aDrainAtEmptyMovesNothingEvenWhileARestoreMovesSanity() {
+        assertEquals(Set.of(COMPANY), SanityTracker.moving(new Sanity(0),
+                new Rate[] {Rate.of(-0.5, LOW_LIGHT), Rate.of(0.1, COMPANY)}));
+    }
+
+    @Test
+    void aRateOfZeroMovesNothing() {
+        assertEquals(Set.of(), SanityTracker.moving(new Sanity(50), new Rate[] {Rate.of(0, LOW_LIGHT)}));
+    }
+
+    @Test
+    void aRateNamesEachOfItsCauses() {
+        assertEquals(Set.of(MUSIC, STALE_DISC), SanityTracker.moving(new Sanity(50), new Rate[] {Rate.of(0.05, MUSIC, STALE_DISC)}));
+    }
+
+    private static Rate[] rates(double... perTick) {
+        var rates = new Rate[perTick.length];
+        for (int i = 0; i < perTick.length; i++) {
+            rates[i] = Rate.of(perTick[i]);
+        }
+        return rates;
     }
 }

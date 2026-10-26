@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/root",
+  "criteria": {
+    "music": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "music"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.music.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:music_disc_13"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.music.title"
+    }
+  },
+  "requirements": [
+    [
+      "music"
+    ]
+  ]
+}

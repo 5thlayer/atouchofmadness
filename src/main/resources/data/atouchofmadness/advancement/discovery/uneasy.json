@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/root",
+  "criteria": {
+    "uneasy": {
+      "trigger": "atouchofmadness:stage_reached",
+      "conditions": {
+        "stage": "uneasy"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.uneasy.description"
+    },
+    "frame": "goal",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:ender_eye"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.uneasy.title"
+    }
+  },
+  "requirements": [
+    [
+      "uneasy"
+    ]
+  ]
+}

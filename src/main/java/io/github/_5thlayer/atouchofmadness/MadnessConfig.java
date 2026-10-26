@@ -15,7 +15,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 /**
  * The common config, {@code atouchofmadness-common.toml}: where Sanity starts and where its stages
  * begin, the drains of where a player stands, the drain and restore of who is near, the restore of
- * music, the restores of sleep and flowers, and the Flower Crown.
+ * music, the restores of sleep and flowers, the Flower Crown, and whether discovery hides what each does.
  */
 public final class MadnessConfig {
 
@@ -132,6 +132,15 @@ public final class MadnessConfig {
 
     static {
         BUILDER.pop();
+        BUILDER.comment("Discovery: what a player learns of Sanity by meeting it.").push("discovery");
+    }
+
+    private static final ModConfigSpec.BooleanValue DISCOVERY = BUILDER
+            .comment("Whether the Pillar shows nothing of what a thing does to Sanity until the player has met it. Off, everything counts as known; the advancements are still earned.")
+            .define("enabled", true);
+
+    static {
+        BUILDER.pop();
     }
 
     public static final ModConfigSpec SPEC = BUILDER.build();
@@ -179,6 +188,11 @@ public final class MadnessConfig {
             return MomentRules.DEFAULT;
         }
         return new MomentRules(SLEEP.get(), FLOWER.get());
+    }
+
+    /** On until the config loads. */
+    public static boolean discoveryEnabled() {
+        return !SPEC.isLoaded() || DISCOVERY.get();
     }
 
     /** The defaults until the config loads. */

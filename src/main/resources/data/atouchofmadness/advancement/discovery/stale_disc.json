@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/music",
+  "criteria": {
+    "stale_disc": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "stale_disc"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.stale_disc.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:music_disc_11"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.stale_disc.title"
+    }
+  },
+  "requirements": [
+    [
+      "stale_disc"
+    ]
+  ]
+}

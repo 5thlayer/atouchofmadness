@@ -6,6 +6,7 @@ package io.github._5thlayer.atouchofmadness.moments;
 import com.mojang.serialization.Codec;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
+import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -66,7 +67,7 @@ public final class Moments {
     /** Only waking every sleeper as the night skips wakes a player neither at once nor telling the level. */
     private static void wokeUp(PlayerWakeUpEvent event) {
         if (event.getEntity() instanceof ServerPlayer player && !event.wakeImmediately() && !event.updateLevel()) {
-            PlayerSanity.add(player, rules.sleep());
+            PlayerSanity.add(player, rules.sleep(), Cause.SLEEP);
         }
     }
 
@@ -80,14 +81,14 @@ public final class Moments {
             applyModifier(player, BuiltInRegistries.ITEM.wrapAsHolder(Items.CAKE));
         } else if (stat.getType() == Stats.BLOCK_MINED && stat.getValue() instanceof Block block
                 && block.defaultBlockState().is(BlockTags.FLOWERS)) {
-            PlayerSanity.add(player, rules.flower());
+            PlayerSanity.add(player, rules.flower(), Cause.FLOWER);
         }
     }
 
     private static void applyModifier(ServerPlayer player, Holder<Item> item) {
         Integer modifier = item.getData(SANITY_MODIFIER);
         if (modifier != null && modifier != 0) {
-            PlayerSanity.add(player, modifier);
+            PlayerSanity.add(player, modifier, Cause.FOOD);
         }
     }
 

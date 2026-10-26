@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/root",
+  "criteria": {
+    "low_light": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "low_light"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.low_light.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:torch"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.low_light.title"
+    }
+  },
+  "requirements": [
+    [
+      "low_light"
+    ]
+  ]
+}

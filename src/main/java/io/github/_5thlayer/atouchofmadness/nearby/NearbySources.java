@@ -10,7 +10,9 @@ import com.mojang.serialization.Codec;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
+import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
+import io.github._5thlayer.atouchofmadness.sanity.Rate;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
@@ -58,8 +60,8 @@ public final class NearbySources {
         modBus.addListener(RegisterDataMapTypesEvent.class, event -> event.register(UNSETTLING_WEIGHT));
         modBus.addListener(ModConfigEvent.Loading.class, NearbySources::configChanged);
         modBus.addListener(ModConfigEvent.Reloading.class, NearbySources::configChanged);
-        PlayerSanity.addSource(NearbySources::hostile);
-        PlayerSanity.addSource(NearbySources::company);
+        PlayerSanity.addSource(player -> Rate.of(hostile(player), Cause.HOSTILE));
+        PlayerSanity.addSource(player -> Rate.of(company(player), Cause.COMPANY));
     }
 
     private static double hostile(ServerPlayer player) {

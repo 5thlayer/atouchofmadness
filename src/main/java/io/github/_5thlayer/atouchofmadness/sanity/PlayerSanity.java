@@ -6,6 +6,7 @@ package io.github._5thlayer.atouchofmadness.sanity;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
@@ -35,7 +36,9 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  * and restores sum into the Net rate, and Sanity moves by it for the 20 ticks. An instantaneous drain or
  * restore, {@code /sanity}, joining and respawning move it at once. Whenever it moves, and whenever the
  * config moves a threshold, the Stage-change listeners hear of a player whose Stage differs from the
- * one they last heard; a player who joins is heard of from no Stage. The Net rate and the last Stage
+ * one they last heard; a player who joins is heard of from no Stage. The move listeners hear of each
+ * Cause that moved it: a Moment's when it moved Sanity at all, and a continuous one's at each evaluation
+ * where Sanity was not already at the end it pushes toward. The Net rate and the last Stage
  * heard of are kept in memory from a player's join to their logout, and never saved; a player who never
  * joined, such as a fake one, is heard of by no one.
  */
@@ -43,13 +46,19 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 public final class PlayerSanity {
 
     /**
-     * A continuous drain or restore: its rate for the player, in Sanity a tick, negative for a drain, or 0
-     * when it does not apply. Each is called once an evaluation and nowhere else, so a source may also
-     * act on what the evaluation stands for, as music records a play and the Flower Crown wears.
+     * A continuous drain or restore: its rate for the player, or {@link Rate#NONE} when it does not
+     * apply. Each is called once an evaluation and nowhere else, so a source may also act on what the
+     * evaluation stands for, as music records a play and the Flower Crown wears.
      */
     @FunctionalInterface
     public interface Source {
-        double rate(ServerPlayer player);
+        Rate rate(ServerPlayer player);
+    }
+
+    /** Hears of a Cause that moved a player's Sanity. */
+    @FunctionalInterface
+    public interface MoveListener {
+        void moved(ServerPlayer player, Cause cause);
     }
 
     /** Hears of a player's Stage changing. It must not move Sanity itself. */
@@ -75,6 +84,7 @@ public final class PlayerSanity {
 
     private static final List<Source> SOURCES = new CopyOnWriteArrayList<>();
     private static final List<StageListener> LISTENERS = new CopyOnWriteArrayList<>();
+    private static final List<MoveListener> MOVE_LISTENERS = new CopyOnWriteArrayList<>();
     private static final Map<UUID, SanityTracker> TRACKERS = new HashMap<>();
 
     private PlayerSanity() {
@@ -94,6 +104,11 @@ public final class PlayerSanity {
     /** Adds a listener that hears of every Stage change from now on, including each join. */
     public static void onStageChange(StageListener listener) {
         LISTENERS.add(listener);
+    }
+
+    /** Adds a listener that hears of every Cause that moves a player's Sanity from now on. */
+    public static void onMove(MoveListener listener) {
+        MOVE_LISTENERS.add(listener);
     }
 
     public static Sanity get(ServerPlayer player) {
@@ -126,6 +141,25 @@ public final class PlayerSanity {
         return sanity;
     }
 
+    /**
+     * Applies a Moment, a drain (negative) or restore (positive) with a Cause, now; the move listeners
+     * hear of it if it moved Sanity. Not from a Stage-change listener.
+     */
+    public static Sanity add(ServerPlayer player, double amount, Cause cause) {
+        var before = get(player);
+        var after = add(player, amount);
+        if (!after.equals(before)) {
+            heardMove(player, Set.of(cause));
+        }
+        return after;
+    }
+
+    private static void heardMove(ServerPlayer player, Set<Cause> causes) {
+        if (TRACKERS.containsKey(player.getUUID())) {
+            causes.forEach(cause -> MOVE_LISTENERS.forEach(listener -> listener.moved(player, cause)));
+        }
+    }
+
     private static void observe(ServerPlayer player) {
         var tracker = TRACKERS.get(player.getUUID());
         if (tracker == null) {
@@ -150,12 +184,13 @@ public final class PlayerSanity {
         if (tracker == null) {
             return;
         }
-        double[] rates = SOURCES.stream().mapToDouble(source -> source.rate(player)).toArray();
+        var rates = SOURCES.stream().map(source -> source.rate(player)).toArray(Rate[]::new);
         var before = get(player);
         var after = tracker.evaluate(before, rates, EVALUATION_TICKS);
         if (!after.equals(before)) {
             set(player, after);
         }
+        heardMove(player, SanityTracker.moving(before, rates));
     }
 
     /** Whether this server tick is the player's own of every {@link #EVALUATION_TICKS}, chosen from their id so players spread across them. */

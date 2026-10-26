@@ -97,7 +97,7 @@ final class EnvironmentTests {
     }
 
     /** A stone room over the whole platform, its walls and its roof at y 4 closed. */
-    private static void closedRoom(GameTestHelper helper) {
+    static void closedRoom(GameTestHelper helper) {
         for (var pos : BlockPos.betweenClosed(0, 1, 0, 8, 4, 8)) {
             boolean shell = pos.getX() == 0 || pos.getX() == 8 || pos.getZ() == 0 || pos.getZ() == 8 || pos.getY() == 4;
             if (shell) {

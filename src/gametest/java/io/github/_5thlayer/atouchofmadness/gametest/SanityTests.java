@@ -16,6 +16,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
+import io.github._5thlayer.atouchofmadness.sanity.Rate;
 import io.github._5thlayer.atouchofmadness.sanity.Stage;
 import io.github._5thlayer.atouchofmadness.sanity.StageChange;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -61,7 +62,7 @@ final class SanityTests {
                 }
             }
         });
-        PlayerSanity.addSource(player -> RATES.getOrDefault(player.getUUID(), 0.0));
+        PlayerSanity.addSource(player -> Rate.of(RATES.getOrDefault(player.getUUID(), 0.0)));
     }
 
     private SanityTests() {
@@ -229,6 +230,11 @@ final class SanityTests {
     /** Sets the config's Sane line in memory, without saving the file, and reloads it as a change to the file would. */
     private static void reload(ModConfigSpec.DoubleValue saneAbove, double value) {
         saneAbove.set(value);
+        reloadConfig();
+    }
+
+    /** Tells the Pillar its common config reloaded, as a change to its file would, once a test has set a value in it. */
+    static void reloadConfig() {
         ModList.get().getModContainerById(ATouchOfMadness.MOD_ID).orElseThrow()
                 .acceptEvent(new ModConfigEvent.Reloading(config));
     }

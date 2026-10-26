@@ -6,7 +6,9 @@ package io.github._5thlayer.atouchofmadness.crown;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
+import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
+import io.github._5thlayer.atouchofmadness.sanity.Rate;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
@@ -53,7 +55,7 @@ public final class FlowerCrown {
         ITEMS.register(modBus);
         modBus.addListener(ModConfigEvent.Loading.class, FlowerCrown::configChanged);
         modBus.addListener(ModConfigEvent.Reloading.class, FlowerCrown::configChanged);
-        PlayerSanity.addSource(FlowerCrown::worn);
+        PlayerSanity.addSource(player -> Rate.of(worn(player), Cause.FLOWER_CROWN));
         NeoForge.EVENT_BUS.addListener(AnvilUpdateEvent.class, FlowerCrown::anvil);
     }
 

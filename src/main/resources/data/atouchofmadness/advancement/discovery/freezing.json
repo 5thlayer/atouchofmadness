@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/root",
+  "criteria": {
+    "freezing": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "freezing"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.freezing.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:powder_snow_bucket"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.freezing.title"
+    }
+  },
+  "requirements": [
+    [
+      "freezing"
+    ]
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "criteria": {
+    "joined": {
+      "trigger": "minecraft:tick"
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "background": "minecraft:block/soul_soil",
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.root.description"
+    },
+    "icon": {
+      "id": "atouchofmadness:flower_crown"
+    },
+    "show_toast": false,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.root.title"
+    }
+  },
+  "requirements": [
+    [
+      "joined"
+    ]
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/root",
+  "criteria": {
+    "flower": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "flower"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.flower.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:poppy"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.flower.title"
+    }
+  },
+  "requirements": [
+    [
+      "flower"
+    ]
+  ]
+}
