@@ -99,8 +99,14 @@ public abstract class ShadowCreature extends PathfinderMob {
         return player != null && isRealFor(player);
     }
 
-    private static boolean isRealFor(ServerPlayer owner) {
-        return PlayerSanity.stage(owner) == Stage.INSANE;
+    /** Whether a creature is Real to this player: whether they are Insane. */
+    private static boolean isRealFor(ServerPlayer player) {
+        return PlayerSanity.stage(player) == Stage.INSANE;
+    }
+
+    /** Whether it can neither harm nor be harmed now: Unreal, or fading. */
+    private boolean isHarmless() {
+        return !isReal() || isFading();
     }
 
     public boolean isFading() {
@@ -126,7 +132,7 @@ public abstract class ShadowCreature extends PathfinderMob {
 
     /** Its Owner and any Insane player see it, and only they can hit it. */
     public boolean canBeSeenBy(ServerPlayer player) {
-        return isOwnedBy(player) || PlayerSanity.stage(player) == Stage.INSANE;
+        return isOwnedBy(player) || isRealFor(player);
     }
 
     @Override
@@ -170,7 +176,7 @@ public abstract class ShadowCreature extends PathfinderMob {
         if (source.getEntity() instanceof ServerPlayer player && !canBeSeenBy(player)) {
             return false;
         }
-        if (!isReal() || isFading()) {
+        if (isHarmless()) {
             if (source.getEntity() != null) {
                 fade();
             }
@@ -182,7 +188,7 @@ public abstract class ShadowCreature extends PathfinderMob {
     /** Only a Real creature attacks, and each hit it lands on a player takes the strike from their Sanity. */
     @Override
     public boolean doHurtTarget(ServerLevel level, Entity target) {
-        if (!isReal() || isFading()) {
+        if (isHarmless()) {
             return false;
         }
         boolean hurt = super.doHurtTarget(level, target);

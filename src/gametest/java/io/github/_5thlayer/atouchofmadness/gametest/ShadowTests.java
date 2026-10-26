@@ -5,6 +5,8 @@ package io.github._5thlayer.atouchofmadness.gametest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -25,10 +27,12 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition.Weather;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BedBlock;
@@ -36,12 +40,15 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 /**
  * The Shadow Creatures (ADR 0002). Each player Uneasy or Insane, in Survival or Adventure, gets up to
  * their cap, 1 at 50, 2 at 35, 3 at 20 and 4 at 10 and below, Gaunts only below 10; light doesn't
  * matter, and a dimension type outside {@code #atouchofmadness:shadows} gets none. Each creature is
- * sent only to its Owner and Insane players, who alone can hit it; Unreal while the Owner is Uneasy,
+ * sent only to its Owner and Insane players, who alone can hit it, even one standing still as their
+ * Stage changes; Unreal while the Owner is Uneasy,
  * harming and harmed by nothing, fading when approached or struck; Real while they are Insane,
  * hunting and killable, dropping Umbra, still on Peaceful. It goes with its Owner's logout, death,
  * change of dimension and sleep, and when their cap drops, never stops them sleeping, and is never
@@ -85,6 +92,14 @@ final class ShadowTests {
     /** A restore of 1 a minute, as a rate in Sanity a tick. */
     private static final double PER_MINUTE = -EnvironmentRules.drainPerTick(1);
 
+    /** Each player's id and the id of each entity vanilla's tracker sends them, by NeoForge's tracking events. */
+    private static final Set<String> TRACKING = ConcurrentHashMap.newKeySet();
+
+    static {
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.StartTracking.class, event -> TRACKING.add(tracking(event.getEntity(), event.getTarget())));
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.StopTracking.class, event -> TRACKING.remove(tracking(event.getEntity(), event.getTarget())));
+    }
+
     private ShadowTests() {
     }
 
@@ -119,6 +134,7 @@ final class ShadowTests {
                     helper -> unrealStruck(helper, kind));
             tests.test("shadow_an_unreal_" + name + "_fades_when_approached", ShadowCreature.FADE_TICKS + 5, helper -> approached(helper, kind));
             tests.test("shadow_a_real_" + name + "_attacks_its_owner_and_can_be_killed", 200, helper -> attacks(helper, kind));
+            tests.test("shadow_a_player_standing_still_is_sent_anothers_" + name + "_only_while_insane", 20, helper -> retracked(helper, kind));
             tests.test("shadow_raising_sanity_above_twenty_turns_a_" + name + "_unreal", 2, helper -> turnsUnreal(helper, kind));
             peaceful.test("shadow_on_peaceful_a_real_" + name + "_deals_nothing_stays_and_drops_umbra", 60, helper -> onPeaceful(helper, kind));
             tests.test("shadow_a_" + name + "_goes_when_its_owner_logs_out", 5, helper -> goesWhen(helper, kind, (h, owner) -> TestPlayers.playerList(h).remove(owner)));
@@ -338,6 +354,49 @@ final class ShadowTests {
             helper.fail("an Insane player could not hit a Real " + kind.name());
         }
         helper.succeed();
+    }
+
+    /**
+     * A Sane player, still, starts being sent another's creature as they turn Insane, and stops as they
+     * turn Sane again. The creature is placed once both players' chunk is tracked, which takes the
+     * tracker a tick or two after they join, since only a move would have it ask again.
+     */
+    private static void retracked(GameTestHelper helper, Kind kind) {
+        var owner = join(helper, new BlockPos(0, 1, 0), INSANE, GameType.SURVIVAL);
+        var viewer = join(helper, new BlockPos(8, 1, 8), 60, GameType.SURVIVAL);
+        var chunkMap = helper.getLevel().getChunkSource().chunkMap;
+        var chunk = ChunkPos.containing(helper.absolutePos(MIDDLE));
+        ShadowCreature[] creature = {null};
+        helper.onEachTick(() -> {
+            if (creature[0] == null) {
+                var players = chunkMap.getPlayers(chunk, false);
+                if (players.contains(owner) && players.contains(viewer)) {
+                    creature[0] = place(helper, kind, owner, MIDDLE);
+                    creature[0].setNoAi(true);
+                    TestPlayers.whenDone(helper, () -> TRACKING.removeIf(key -> key.endsWith("/" + creature[0].getId())));
+                }
+                return;
+            }
+            if (!TRACKING.contains(tracking(owner, creature[0]))) {
+                helper.fail("the Owner is not sent their " + kind.name() + ": the fixture tests nothing");
+            }
+            expectTracked(helper, viewer, creature[0], false, "a Sane player");
+            PlayerSanity.set(viewer, new Sanity(GAUNTS));
+            expectTracked(helper, viewer, creature[0], true, "a player who turned Insane");
+            PlayerSanity.set(viewer, new Sanity(60));
+            expectTracked(helper, viewer, creature[0], false, "a player Sane again");
+            helper.succeed();
+        });
+    }
+
+    private static void expectTracked(GameTestHelper helper, ServerPlayer player, ShadowCreature creature, boolean tracked, String who) {
+        if (TRACKING.contains(tracking(player, creature)) != tracked) {
+            helper.fail(who + (tracked ? " is not" : " is") + " sent another's " + creature.getType().toShortString());
+        }
+    }
+
+    private static String tracking(Entity player, Entity entity) {
+        return player.getUUID() + "/" + entity.getId();
     }
 
     private static void turnsUnreal(GameTestHelper helper, Kind kind) {

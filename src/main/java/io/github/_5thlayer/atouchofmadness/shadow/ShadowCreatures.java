@@ -17,6 +17,8 @@ import io.github._5thlayer.atouchofmadness.nearby.NearbySources;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Rate;
+import io.github._5thlayer.atouchofmadness.sanity.Stage;
+import io.github._5thlayer.atouchofmadness.sanity.StageChange;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
@@ -79,6 +81,7 @@ public final class ShadowCreatures {
         modBus.addListener(ModConfigEvent.Reloading.class, ShadowCreatures::configChanged);
         PlayerSanity.addSource(player -> Rate.of(nearby(player), Cause.SHADOW_CREATURE));
         PlayerSanity.addSource(player -> Rate.of(carried(player), Cause.UMBRA));
+        PlayerSanity.onStageChange(ShadowCreatures::retrack);
         ShadowSpawner.register();
     }
 
@@ -102,6 +105,27 @@ public final class ShadowCreatures {
         if (owned != null && owned.remove(creature) && owned.isEmpty()) {
             BY_OWNER.remove(creature.ownerId());
         }
+    }
+
+    /**
+     * Has vanilla's tracker ask again whom each creature in the player's level but their own is sent to,
+     * as they become Insane or stop being it: it asks only when a creature or a player changes section,
+     * so a player standing still would go on seeing another's creatures, or not seeing them (ADR 0002).
+     * Each is sent anew to everyone it is sent to.
+     */
+    private static void retrack(ServerPlayer player, StageChange change) {
+        if (change.from().isEmpty() || (change.from().get() == Stage.INSANE) == (change.to() == Stage.INSANE)) {
+            return;
+        }
+        var level = player.level();
+        BY_OWNER.values().stream()
+                .flatMap(Set::stream)
+                .filter(creature -> !creature.isRemoved() && creature.level() == level && !creature.isOwnedBy(player))
+                .toList()
+                .forEach(creature -> {
+                    level.getChunkSource().removeEntity(creature);
+                    level.getChunkSource().addEntity(creature);
+                });
     }
 
     private static double nearby(ServerPlayer player) {
