@@ -4,13 +4,14 @@
 package io.github._5thlayer.atouchofmadness;
 
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
+import io.github._5thlayer.atouchofmadness.moments.MomentRules;
 import io.github._5thlayer.atouchofmadness.sanity.Sanity;
 import io.github._5thlayer.atouchofmadness.sanity.SanityRules;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * The common config, {@code atouchofmadness-common.toml}: where Sanity starts and where its stages
- * begin, and the drains of where a player stands.
+ * begin, the drains of where a player stands, and the restores of sleep and flowers.
  */
 public final class MadnessConfig {
 
@@ -63,6 +64,19 @@ public final class MadnessConfig {
 
     static {
         BUILDER.pop();
+        BUILDER.comment("The instantaneous restores, each in Sanity. A food's is its atouchofmadness:sanity_modifier data map entry.").push("moments");
+    }
+
+    private static final ModConfigSpec.DoubleValue SLEEP = BUILDER
+            .comment("The restore to each player who wakes from sleeping through the night.")
+            .defineInRange("sleep", MomentRules.DEFAULT.sleep(), 0, Sanity.MAX);
+
+    private static final ModConfigSpec.DoubleValue FLOWER = BUILDER
+            .comment("The restore for each block in #minecraft:flowers a player breaks.")
+            .defineInRange("flower", MomentRules.DEFAULT.flower(), 0, Sanity.MAX);
+
+    static {
+        BUILDER.pop();
     }
 
     public static final ModConfigSpec SPEC = BUILDER.build();
@@ -86,5 +100,13 @@ public final class MadnessConfig {
             return EnvironmentRules.DEFAULT;
         }
         return new EnvironmentRules(LOW_LIGHT_BELOW.get(), LOW_LIGHT.get(), FREEZING.get(), WET.get(), UNSETTLING.get());
+    }
+
+    /** The defaults until the config loads. */
+    public static MomentRules momentRules() {
+        if (!SPEC.isLoaded()) {
+            return MomentRules.DEFAULT;
+        }
+        return new MomentRules(SLEEP.get(), FLOWER.get());
     }
 }

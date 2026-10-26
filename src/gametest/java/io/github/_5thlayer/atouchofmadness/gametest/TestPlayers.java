@@ -36,7 +36,7 @@ final class TestPlayers {
     }
 
     /**
-     * A survival player logged in on the test's server, as {@code makeMockServerPlayerInLevel} does it,
+     * A player logged in on the test's server, in its default game mode, as {@code makeMockServerPlayerInLevel} does it,
      * with what the player's file holds read first, as a login's {@code PrepareSpawnTask} does. A
      * connection would tick the player each server tick; this one doesn't, so a test that needs it
      * ticks the player itself.

@@ -70,6 +70,7 @@ public final class ATouchOfMadnessGameTests {
         CreativeTabTests.register(tests);
         SanityTests.register(tests);
         EnvironmentTests.register(tests);
+        MomentsTests.register(tests);
     }
 
     private static Identifier id(String path) {
