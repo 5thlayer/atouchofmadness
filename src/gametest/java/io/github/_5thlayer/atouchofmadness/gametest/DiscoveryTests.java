@@ -128,7 +128,7 @@ final class DiscoveryTests {
             var parent = switch (id) {
                 case "stale_disc" -> "music";
                 case "insane" -> "uneasy";
-                case "shadow_strike" -> "shadow_creature";
+                case "shadow_strike", "shadow_kill" -> "shadow_creature";
                 default -> "root";
             };
             if (!advancement.value().parent().equals(Optional.of(Discovery.advancementId(parent)))) {

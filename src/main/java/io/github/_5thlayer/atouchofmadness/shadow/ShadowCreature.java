@@ -37,10 +37,10 @@ import org.jspecify.annotations.Nullable;
  * blocks. While the Owner is Uneasy it is Unreal: it stalks them at the edge of sight, takes and deals
  * no harm, collides with nothing, and fades once they come within the fade distance or strike it.
  * While they are Insane it is Real: it hunts them, coming out beside them where a block is in its way,
- * can be killed, and each of its hits takes the strike from their Sanity. It is never saved, and
- * vanishes as soon as its Owner is gone, dead, in another dimension, asleep or out of Survival and
- * Adventure; the spawner removes it when the Owner's cap drops below their count. It never stops its
- * Owner sleeping, being no {@code Monster}.
+ * can be killed, and each of its hits takes the strike from their Sanity, while a player's kill of it
+ * restores theirs. It is never saved, and vanishes as soon as its Owner is gone, dead, in another
+ * dimension, asleep or out of Survival and Adventure; the spawner removes it when the Owner's cap drops
+ * below their count. It never stops its Owner sleeping, being no {@code Monster}.
  */
 public abstract class ShadowCreature extends PathfinderMob {
 
@@ -66,6 +66,8 @@ public abstract class ShadowCreature extends PathfinderMob {
     private int fadeTicks;
     /** How far it drifts a tick, in blocks. */
     private final double drift;
+    /** The Sanity its kill restores to the player who makes it. */
+    private final double kill;
     private final DriftControl driftControl = new DriftControl();
 
     protected ShadowCreature(EntityType<? extends ShadowCreature> type, Level level, Function<ShadowRules, ShadowRules.Stats> stats) {
@@ -75,6 +77,7 @@ public abstract class ShadowCreature extends PathfinderMob {
         getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(own.damage());
         setHealth(getMaxHealth());
         drift = own.drift() / 20;
+        kill = own.kill();
         moveControl = driftControl;
     }
 
@@ -223,6 +226,19 @@ public abstract class ShadowCreature extends PathfinderMob {
             PlayerSanity.add(player, -ShadowCreatures.rules().strike(), Cause.SHADOW_STRIKE);
         }
         return hurt;
+    }
+
+    /**
+     * A kill while Real restores its kind's Sanity to the player behind the killing blow, their arrows
+     * and all; a death with no player behind it, or one a listener cancels, restores nothing.
+     */
+    @Override
+    public void die(DamageSource source) {
+        boolean real = !level().isClientSide() && !dead && isReal();
+        super.die(source);
+        if (real && dead && source.getEntity() instanceof ServerPlayer player) {
+            PlayerSanity.add(player, kill, Cause.SHADOW_KILL);
+        }
     }
 
     /** Whether its body is in a solid block, more than grazing one. */

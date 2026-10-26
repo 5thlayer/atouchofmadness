@@ -29,7 +29,9 @@ public enum Cause {
     SLEEP,
     FLOWER,
     /** A hit from a Real Shadow Creature. */
-    SHADOW_STRIKE;
+    SHADOW_STRIKE,
+    /** A player's kill of a Real Shadow Creature, one cause for both kinds. */
+    SHADOW_KILL;
 
     /** Its id, as data names it: {@code low_light}. */
     public String id() {

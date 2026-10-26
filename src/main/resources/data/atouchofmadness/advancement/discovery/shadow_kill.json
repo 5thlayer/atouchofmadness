@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/shadow_creature",
+  "criteria": {
+    "shadow_kill": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "shadow_kill"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.shadow_kill.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "atouchofmadness:umbra"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.shadow_kill.title"
+    }
+  },
+  "requirements": [
+    [
+      "shadow_kill"
+    ]
+  ]
+}

@@ -64,12 +64,13 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
  */
 final class ShadowTests {
 
-    /** A creature of each kind, its weight nearby and the Umbra it drops. */
-    record Kind(String name, Supplier<? extends EntityType<? extends ShadowCreature>> type, double weight, int minUmbra, int maxUmbra) {
+    /** A creature of each kind, its weight nearby, the Umbra it drops and the Sanity its kill restores. */
+    record Kind(String name, Supplier<? extends EntityType<? extends ShadowCreature>> type, double weight, int minUmbra, int maxUmbra,
+            double kill) {
     }
 
-    static final Kind LURKER = new Kind("lurker", ShadowCreatures.LURKER, 2, 1, 2);
-    static final Kind GAUNT = new Kind("gaunt", ShadowCreatures.GAUNT, 4, 2, 4);
+    static final Kind LURKER = new Kind("lurker", ShadowCreatures.LURKER, 2, 1, 2, 10);
+    static final Kind GAUNT = new Kind("gaunt", ShadowCreatures.GAUNT, 4, 2, 4, 20);
     private static final List<Kind> KINDS = List.of(LURKER, GAUNT);
 
     /** The platform is 9 by 9 with its floor at y 0; a player stands on it at y 1. */
@@ -121,6 +122,7 @@ final class ShadowTests {
         var tests = defaults.padded(PADDING);
         tests.test("discovery_an_own_shadow_creature_nearby_discovers_it", EVALUATED + 1, ShadowTests::discoverCreature);
         tests.test("discovery_a_hit_from_a_real_shadow_creature_discovers_the_strike", 1, ShadowTests::discoverStrike);
+        tests.test("discovery_killing_a_real_shadow_creature_discovers_the_kill", 1, ShadowTests::discoverKill);
         tests.test("discovery_carrying_umbra_discovers_it", EVALUATED + 1, ShadowTests::discoverUmbra);
         tests.test("shadow_carrying_any_umbra_drains_one_however_much", EVALUATED + 1, ShadowTests::umbra);
 
@@ -154,6 +156,14 @@ final class ShadowTests {
                     helper -> drains(helper, kind, INSANE, false, 2 * kind.weight()));
             tests.test("shadow_another_players_" + name + "_drains_nothing", EVALUATED + 1, helper -> drains(helper, kind, INSANE, true, 0));
             tests.test("shadow_a_hit_from_a_real_" + name + "_takes_five_sanity", 1, helper -> strike(helper, kind));
+            tests.test("shadow_kill_the_owner_killing_a_real_" + name + "_restores_" + (int) kind.kill(), 1, helper -> ownerKills(helper, kind));
+            tests.test("shadow_kill_an_insane_player_killing_anothers_" + name + "_gains_it_and_the_owner_nothing", 1,
+                    helper -> anotherKills(helper, kind));
+            tests.test("shadow_kill_a_real_" + name + "_shot_by_its_owner_restores_it", 1, helper -> shot(helper, kind));
+            tests.test("shadow_kill_a_real_" + name + "_dying_of_no_player_restores_nothing", 1, helper -> diesOfNoPlayer(helper, kind));
+            tests.test("shadow_kill_an_unreal_" + name + "_fading_restores_nothing", ShadowCreature.FADE_TICKS + 5,
+                    helper -> fadesForNothing(helper, kind));
+            tests.test("shadow_kill_a_real_" + name + "_vanishing_restores_nothing", 5, helper -> vanishesForNothing(helper, kind));
         }
     }
 
@@ -367,10 +377,11 @@ final class ShadowTests {
         });
     }
 
-    /** Each of several kills drops between the kind's least and most Umbra. */
+    /** Each of several kills drops between the kind's least and most Umbra; each kill's restore is undone, so the next is Real. */
     private static void drops(GameTestHelper helper, Kind kind) {
         var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
         for (int i = 0; i < 8; i++) {
+            PlayerSanity.set(owner, new Sanity(INSANE));
             var creature = place(helper, kind, owner, new BlockPos(5, 1, 4));
             creature.hurtServer(helper.getLevel(), owner.damageSources().playerAttack(owner), 1000);
             int umbra = takeUmbra(helper);
@@ -654,6 +665,86 @@ final class ShadowTests {
         helper.succeed();
     }
 
+    // Kills.
+
+    private static void ownerKills(GameTestHelper helper, Kind kind) {
+        var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
+        var creature = place(helper, kind, owner, new BlockPos(5, 1, 4));
+        creature.hurtServer(helper.getLevel(), owner.damageSources().playerAttack(owner), 1000);
+        expectSanity(helper, owner, INSANE + kind.kill(), "the Owner, who killed a Real " + kind.name() + ",");
+        helper.succeed();
+    }
+
+    private static void anotherKills(GameTestHelper helper, Kind kind) {
+        var owner = join(helper, new BlockPos(0, 1, 0), INSANE, GameType.SURVIVAL);
+        var killer = join(helper, new BlockPos(0, 1, 8), GAUNTS, GameType.SURVIVAL);
+        var creature = place(helper, kind, owner, new BlockPos(8, 1, 8));
+        creature.hurtServer(helper.getLevel(), killer.damageSources().playerAttack(killer), 1000);
+        expectSanity(helper, killer, GAUNTS + kind.kill(), "an Insane player who killed another's Real " + kind.name() + ",");
+        expectSanity(helper, owner, INSANE, "the Owner of a " + kind.name() + " another killed");
+        helper.succeed();
+    }
+
+    /** A snowball the Owner threw: credit goes to the thrower, not the projectile. */
+    private static void shot(GameTestHelper helper, Kind kind) {
+        var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
+        var creature = place(helper, kind, owner, new BlockPos(5, 1, 4));
+        var snowball = EntityType.SNOWBALL.create(helper.getLevel(), EntitySpawnReason.EVENT);
+        creature.hurtServer(helper.getLevel(), owner.damageSources().thrown(snowball, owner), 1000);
+        expectSanity(helper, owner, INSANE + kind.kill(), "the Owner, who shot a Real " + kind.name() + ",");
+        helper.succeed();
+    }
+
+    /** {@code /kill}'s damage and a wolf's bite each kill one, and its Owner, beside it, gains nothing. */
+    private static void diesOfNoPlayer(GameTestHelper helper, Kind kind) {
+        var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
+        var wolf = EntityType.WOLF.create(helper.getLevel(), EntitySpawnReason.EVENT);
+        var level = helper.getLevel();
+        for (var source : List.of(level.damageSources().genericKill(), level.damageSources().mobAttack(wolf))) {
+            var creature = place(helper, kind, owner, new BlockPos(5, 1, 4));
+            creature.hurtServer(level, source, 1000);
+            if (!creature.isDeadOrDying()) {
+                helper.fail("a Real " + kind.name() + " survived " + source.getMsgId() + ": the fixture tests nothing");
+            }
+            expectSanity(helper, owner, INSANE, "the Owner of a " + kind.name() + " killed by " + source.getMsgId());
+        }
+        helper.succeed();
+    }
+
+    private static void fadesForNothing(GameTestHelper helper, Kind kind) {
+        var owner = join(helper, new BlockPos(1, 1, 4), UNEASY, GameType.SURVIVAL);
+        var creature = place(helper, kind, owner, new BlockPos(7, 1, 4));
+        creature.setNoAi(true);
+        creature.hurtServer(helper.getLevel(), owner.damageSources().playerAttack(owner), 1000);
+        helper.onEachTick(() -> {
+            if (creature.isRemoved()) {
+                expectSanity(helper, owner, UNEASY, "the Owner of a " + kind.name() + " that faded");
+                helper.succeed();
+            }
+        });
+    }
+
+    /** It vanishes as its Owner leaves Survival. */
+    private static void vanishesForNothing(GameTestHelper helper, Kind kind) {
+        var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
+        var creature = place(helper, kind, owner, new BlockPos(5, 1, 4));
+        creature.setNoAi(true);
+        owner.setGameMode(GameType.CREATIVE);
+        helper.onEachTick(() -> {
+            if (creature.isRemoved()) {
+                expectSanity(helper, owner, INSANE, "the Owner of a " + kind.name() + " that vanished");
+                helper.succeed();
+            }
+        });
+    }
+
+    private static void expectSanity(GameTestHelper helper, ServerPlayer player, double expected, String who) {
+        double sanity = PlayerSanity.get(player).value();
+        if (Math.abs(sanity - expected) > 1e-9) {
+            helper.fail(who + " has " + sanity + " Sanity, not " + expected);
+        }
+    }
+
     /** One Umbra and a stack drain the same; creative, so no creature comes and neither is company. */
     private static void umbra(GameTestHelper helper) {
         var one = join(helper, new BlockPos(0, 1, 0), 50, GameType.CREATIVE);
@@ -701,6 +792,19 @@ final class ShadowTests {
         creature.doHurtTarget(helper.getLevel(), owner);
         if (!Discovery.isKnown(owner, Cause.SHADOW_STRIKE)) {
             helper.fail("a hit from a Real Shadow Creature did not discover the strike");
+        }
+        helper.succeed();
+    }
+
+    private static void discoverKill(GameTestHelper helper) {
+        var owner = join(helper, new BlockPos(1, 1, 4), INSANE, GameType.SURVIVAL);
+        var creature = place(helper, LURKER, owner, new BlockPos(5, 1, 4));
+        if (Discovery.isKnown(owner, Cause.SHADOW_KILL)) {
+            helper.fail("the kill is known before any kill");
+        }
+        creature.hurtServer(helper.getLevel(), owner.damageSources().playerAttack(owner), 1000);
+        if (!Discovery.isKnown(owner, Cause.SHADOW_KILL)) {
+            helper.fail("killing a Real Shadow Creature did not discover the kill");
         }
         helper.succeed();
     }

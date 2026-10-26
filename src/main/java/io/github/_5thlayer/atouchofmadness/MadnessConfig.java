@@ -186,21 +186,23 @@ public final class MadnessConfig {
     private static final Stats GAUNT = Stats.define("gaunt", "The Gaunt's stats; a change applies to Gaunts that come after it.",
             ShadowRules.DEFAULT.gaunt());
 
-    /** A creature's health, attack damage and drift speed, in a section of their own. */
-    private record Stats(ModConfigSpec.DoubleValue health, ModConfigSpec.DoubleValue damage, ModConfigSpec.DoubleValue drift) {
+    /** A creature's health, attack damage, drift speed and kill restore, in a section of their own. */
+    private record Stats(ModConfigSpec.DoubleValue health, ModConfigSpec.DoubleValue damage, ModConfigSpec.DoubleValue drift,
+            ModConfigSpec.DoubleValue kill) {
 
         static Stats define(String name, String comment, ShadowRules.Stats defaults) {
             BUILDER.comment(comment).push(name);
             var stats = new Stats(
                     BUILDER.comment("Its health.").defineInRange("health", defaults.health(), 1, 1024),
                     BUILDER.comment("The damage of each of its hits, before vanilla scales it by difficulty.").defineInRange("damage", defaults.damage(), 0, 1024),
-                    BUILDER.comment("How fast it drifts, through blocks and all, in blocks a second.").defineInRange("drift", defaults.drift(), 0, 40));
+                    BUILDER.comment("How fast it drifts, through blocks and all, in blocks a second.").defineInRange("drift", defaults.drift(), 0, 40),
+                    BUILDER.comment("The Sanity a player who kills it while Real restores at once.").defineInRange("kill", defaults.kill(), 0, Sanity.MAX));
             BUILDER.pop();
             return stats;
         }
 
         ShadowRules.Stats get() {
-            return new ShadowRules.Stats(health.get(), damage.get(), drift.get());
+            return new ShadowRules.Stats(health.get(), damage.get(), drift.get(), kill.get());
         }
     }
 
