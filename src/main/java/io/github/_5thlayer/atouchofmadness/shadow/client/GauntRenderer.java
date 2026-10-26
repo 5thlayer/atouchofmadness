@@ -20,6 +20,7 @@ import org.jspecify.annotations.Nullable;
 final class GauntRenderer extends MobRenderer<Gaunt, GauntRenderer.State, VexModel> {
 
     private static final Identifier TEXTURE = ShadowRenderers.texture("gaunt");
+    /** The vex model stands about 0.8 tall: this fills the Gaunt's 1.4-high box, set in {@code ShadowCreatures}. */
     private static final float SCALE = 1.75F;
 
     static final class State extends VexRenderState {
