@@ -29,7 +29,9 @@ public enum Cause {
     /** A hit from a Real Shadow Creature. */
     SHADOW_STRIKE,
     /** A player's kill of a Real Shadow Creature, one cause for both kinds. */
-    SHADOW_KILL;
+    SHADOW_KILL,
+    /** A Strike by the Dark, which the Runtime's Strike signal reports; A Touch of Darkness raises it. */
+    STRUCK_BY_THE_DARK;
 
     /** Its id, as data names it: {@code low_light}. */
     public String id() {

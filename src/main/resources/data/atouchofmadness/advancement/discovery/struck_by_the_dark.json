@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/root",
+  "criteria": {
+    "struck_by_the_dark": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "struck_by_the_dark"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.struck_by_the_dark.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "minecraft:ink_sac"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.struck_by_the_dark.title"
+    }
+  },
+  "requirements": [
+    [
+      "struck_by_the_dark"
+    ]
+  ]
+}

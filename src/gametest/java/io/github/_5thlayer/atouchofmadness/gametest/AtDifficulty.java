@@ -8,15 +8,15 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Difficulty;
 
-/** A test environment whose batch runs on Peaceful, the server's difficulty put back after it. */
-record Peaceful() implements TestEnvironmentDefinition<Difficulty> {
+/** A test environment whose batch runs on the difficulty, the server's own put back after it. */
+record AtDifficulty(Difficulty difficulty) implements TestEnvironmentDefinition<Difficulty> {
 
-    static final MapCodec<Peaceful> CODEC = MapCodec.unit(new Peaceful());
+    static final MapCodec<AtDifficulty> CODEC = Difficulty.CODEC.fieldOf("difficulty").xmap(AtDifficulty::new, AtDifficulty::difficulty);
 
     @Override
     public Difficulty setup(ServerLevel level) {
         var before = level.getDifficulty();
-        level.getServer().setDifficulty(Difficulty.PEACEFUL, true);
+        level.getServer().setDifficulty(difficulty, true);
         return before;
     }
 
@@ -26,7 +26,7 @@ record Peaceful() implements TestEnvironmentDefinition<Difficulty> {
     }
 
     @Override
-    public MapCodec<Peaceful> codec() {
+    public MapCodec<AtDifficulty> codec() {
         return CODEC;
     }
 }

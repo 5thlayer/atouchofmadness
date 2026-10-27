@@ -18,8 +18,8 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 /**
  * The common config, {@code atouchofmadness-common.toml}: where Sanity starts and where its stages
  * begin, the drains of where a player stands, the drain and restore of who is near, the restore of
- * music, the restores of sleep and flowers, the Flower Crown, the Shadow Creatures, and whether discovery
- * hides what each does.
+ * music, the restores of sleep and flowers and the drain of a Strike by the Dark, the Flower Crown, the
+ * Shadow Creatures, and whether discovery hides what each does.
  */
 public final class MadnessConfig {
 
@@ -110,7 +110,7 @@ public final class MadnessConfig {
 
     static {
         BUILDER.pop();
-        BUILDER.comment("The instantaneous restores, each in Sanity. A food's is its atouchofmadness:sanity_modifier data map entry.").push("moments");
+        BUILDER.comment("The instantaneous drains and restores, each in Sanity. A food's is its atouchofmadness:sanity_modifier data map entry.").push("moments");
     }
 
     private static final ModConfigSpec.DoubleValue SLEEP = BUILDER
@@ -120,6 +120,10 @@ public final class MadnessConfig {
     private static final ModConfigSpec.DoubleValue FLOWER = BUILDER
             .comment("The restore for each block in #minecraft:flowers a player breaks.")
             .defineInRange("flower", MomentRules.DEFAULT.flower(), 0, Sanity.MAX);
+
+    private static final ModConfigSpec.DoubleValue STRUCK_BY_THE_DARK = BUILDER
+            .comment("The drain of each Strike by the Dark, on every difficulty. Only A Touch of Darkness strikes, so without it this takes nothing.")
+            .defineInRange("struckByTheDark", MomentRules.DEFAULT.struckByTheDark(), 0, Sanity.MAX);
 
     static {
         BUILDER.pop();
@@ -259,7 +263,7 @@ public final class MadnessConfig {
         if (!SPEC.isLoaded()) {
             return MomentRules.DEFAULT;
         }
-        return new MomentRules(SLEEP.get(), FLOWER.get());
+        return new MomentRules(SLEEP.get(), FLOWER.get(), STRUCK_BY_THE_DARK.get());
     }
 
     /** The defaults until the config loads. */

@@ -6,7 +6,7 @@ plugins {
 }
 
 // A Touch Of's Runtime, which draws the Sanity meter (suite ADR-0005), and which a Pillar nests.
-def atouchofRange = '[0.1.0,0.2)'
+def atouchofRange = '[0.1.1,0.2)'
 
 // What the Module requires of other Modules, each as a range (libworks ADR 0003):
 libworks {

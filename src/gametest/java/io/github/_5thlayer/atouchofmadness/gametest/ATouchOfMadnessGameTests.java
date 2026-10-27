@@ -45,7 +45,7 @@ public final class ATouchOfMadnessGameTests {
         TEST_TYPES.register("code", () -> CodeGameTest.CODEC);
         ENVIRONMENT_TYPES.register("sky", () -> Sky.CODEC);
         ENVIRONMENT_TYPES.register("with_test_pack", () -> WithTestPack.CODEC);
-        ENVIRONMENT_TYPES.register("peaceful", () -> Peaceful.CODEC);
+        ENVIRONMENT_TYPES.register("at_difficulty", () -> AtDifficulty.CODEC);
     }
 
     private ATouchOfMadnessGameTests() {
