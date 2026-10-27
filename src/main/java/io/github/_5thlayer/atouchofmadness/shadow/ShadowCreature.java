@@ -7,6 +7,7 @@ import java.util.EnumSet;
 import java.util.UUID;
 import java.util.function.Function;
 
+import io.github._5thlayer.atouchofmadness.hallucination.HallucinationSounds;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Stage;
@@ -21,7 +22,9 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityEvent;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.PathfinderMob;
@@ -235,14 +238,16 @@ public abstract class ShadowCreature extends PathfinderMob {
     }
 
     /**
-     * Only a Real creature attacks, and only from clear of solid blocks; each hit it lands on a player
-     * takes the strike from their Sanity.
+     * Only a Real creature attacks, and only from clear of solid blocks, crying out as it does; each hit
+     * it lands on a player takes the strike from their Sanity.
      */
     @Override
     public boolean doHurtTarget(ServerLevel level, Entity target) {
         if (isHarmless() || isInsideBlocks()) {
             return false;
         }
+        // To the players it is sent to alone, who play the cry themselves.
+        level.broadcastEntityEvent(this, EntityEvent.START_ATTACKING);
         boolean hurt = super.doHurtTarget(level, target);
         if (hurt && target instanceof ServerPlayer player) {
             PlayerSanity.add(player, -ShadowCreatures.rules().strike(), Cause.SHADOW_STRIKE);
@@ -260,6 +265,35 @@ public abstract class ShadowCreature extends PathfinderMob {
         super.die(source);
         if (real && dead && source.getEntity() instanceof ServerPlayer player) {
             PlayerSanity.add(player, kill, Cause.SHADOW_KILL);
+        }
+    }
+
+    /** An Unreal creature murmurs now and then as it stalks; a Real one is silent until it attacks. */
+    @Override
+    protected @Nullable SoundEvent getAmbientSound() {
+        return isReal() ? null : HallucinationSounds.MURMUR.get();
+    }
+
+    /**
+     * Played by each client it is sent to, its Owner and the Insane, and never by the server, which
+     * would play it to every player near, whether or not they can see it (ADR 0002).
+     */
+    @Override
+    public void playAmbientSound() {
+        var sound = getAmbientSound();
+        if (level().isClientSide() && sound != null && !isSilent()) {
+            level().playLocalSound(this, sound, getSoundSource(), getSoundVolume(), getVoicePitch());
+        }
+    }
+
+    @Override
+    public void handleEntityEvent(byte id) {
+        if (id == EntityEvent.START_ATTACKING) {
+            if (!isSilent()) {
+                level().playLocalSound(this, HallucinationSounds.CRY.get(), getSoundSource(), getSoundVolume(), getVoicePitch());
+            }
+        } else {
+            super.handleEntityEvent(id);
         }
     }
 

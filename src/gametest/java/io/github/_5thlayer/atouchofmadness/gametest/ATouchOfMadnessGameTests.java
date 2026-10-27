@@ -81,6 +81,7 @@ public final class ATouchOfMadnessGameTests {
         DiscoveryTests.register(tests);
         ShadowTests.register(tests);
         ShapeTests.register(tests);
+        HallucinationTests.register(tests);
     }
 
     private static Identifier id(String path) {

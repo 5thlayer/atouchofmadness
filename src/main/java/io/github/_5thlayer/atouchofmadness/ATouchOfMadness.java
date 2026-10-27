@@ -6,6 +6,7 @@ package io.github._5thlayer.atouchofmadness;
 import io.github._5thlayer.atouchofmadness.crown.FlowerCrown;
 import io.github._5thlayer.atouchofmadness.discovery.Discovery;
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentDrains;
+import io.github._5thlayer.atouchofmadness.hallucination.Hallucinations;
 import io.github._5thlayer.atouchofmadness.moments.Moments;
 import io.github._5thlayer.atouchofmadness.music.MusicSource;
 import io.github._5thlayer.atouchofmadness.nearby.NearbySources;
@@ -19,8 +20,8 @@ import net.neoforged.fml.config.ModConfig;
 /**
  * The Pillar's entry point. It registers the Pillar's own creative tab, each player's Sanity, the
  * drains of where they stand, the drain and restore of who is near, the restore of music, the Flower
- * Crown, the moments that move it at once, the Shadow Creatures and Umbra, discovery and the common
- * config. The game tests hook themselves in from the {@code gametest} source set, which never ships
+ * Crown, the moments that move it at once, the Shadow Creatures and Umbra, discovery, Hallucinations,
+ * and the common and client configs. The game tests hook themselves in from the {@code gametest} source set, which never ships
  * (libworks ADR 0011).
  */
 @Mod(ATouchOfMadness.MOD_ID)
@@ -31,6 +32,7 @@ public final class ATouchOfMadness {
 
     public ATouchOfMadness(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.COMMON, MadnessConfig.SPEC);
+        container.registerConfig(ModConfig.Type.CLIENT, MadnessClientConfig.SPEC);
         MadnessTab.register(modBus);
         PlayerSanity.register(modBus);
         EnvironmentDrains.register(modBus);
@@ -40,5 +42,6 @@ public final class ATouchOfMadness {
         Moments.register(modBus);
         ShadowCreatures.register(modBus);
         Discovery.register(modBus);
+        Hallucinations.register(modBus);
     }
 }

@@ -1,0 +1,41 @@
+{
+  "hallucination.hiss": {
+    "subtitle": "subtitles.atouchofmadness.hallucination.hiss",
+    "sounds": [{"name": "minecraft:entity.creeper.primed", "type": "event"}]
+  },
+  "hallucination.groan": {
+    "subtitle": "subtitles.atouchofmadness.hallucination.groan",
+    "sounds": [{"name": "minecraft:entity.zombie.ambient", "type": "event"}]
+  },
+  "hallucination.footsteps": {
+    "subtitle": "subtitles.atouchofmadness.hallucination.footsteps",
+    "sounds": [
+      {"name": "minecraft:block.stone.step", "type": "event"},
+      {"name": "minecraft:block.gravel.step", "type": "event"},
+      {"name": "minecraft:block.wood.step", "type": "event"}
+    ]
+  },
+  "hallucination.cave": {
+    "subtitle": "subtitles.atouchofmadness.hallucination.cave",
+    "sounds": [{"name": "minecraft:ambient.cave", "type": "event"}]
+  },
+  "hallucination.door": {
+    "subtitle": "subtitles.atouchofmadness.hallucination.door",
+    "sounds": [
+      {"name": "minecraft:block.wooden_door.open", "type": "event"},
+      {"name": "minecraft:block.wooden_door.close", "type": "event"}
+    ]
+  },
+  "hallucination.whisper": {
+    "subtitle": "subtitles.atouchofmadness.hallucination.whisper",
+    "sounds": [{"name": "minecraft:entity.vex.ambient", "type": "event", "pitch": 0.5, "volume": 0.6}]
+  },
+  "shadow.murmur": {
+    "subtitle": "subtitles.atouchofmadness.shadow.murmur",
+    "sounds": [{"name": "minecraft:entity.warden.ambient", "type": "event", "pitch": 1.5, "volume": 0.5}]
+  },
+  "shadow.cry": {
+    "subtitle": "subtitles.atouchofmadness.shadow.cry",
+    "sounds": [{"name": "minecraft:entity.phantom.ambient", "type": "event", "pitch": 0.6}]
+  }
+}

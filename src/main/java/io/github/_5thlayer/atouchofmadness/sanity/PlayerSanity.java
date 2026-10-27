@@ -36,7 +36,8 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
  * and restores sum into the Net rate, and Sanity moves by it for the 20 ticks. An instantaneous drain or
  * restore, {@code /sanity}, joining and respawning move it at once. Whenever it moves, and whenever the
  * config moves a threshold, the Stage-change listeners hear of a player whose Stage differs from the
- * one they last heard; a player who joins is heard of from no Stage. The move listeners hear of each
+ * one they last heard; a player who joins is heard of from no Stage. The check listeners hear of
+ * their Sanity and Stage at each of those moments, changed or not. The move listeners hear of each
  * Cause that moved it: a Moment's when it moved Sanity at all, and a continuous one's at each evaluation
  * where Sanity was not already at the end it pushes toward. The Net rate and the last Stage
  * heard of are kept in memory from a player's join to their logout, and never saved; a player who never
@@ -67,6 +68,12 @@ public final class PlayerSanity {
         void changed(ServerPlayer player, StageChange change);
     }
 
+    /** Hears of a player's Sanity and Stage each time they are checked. It must not move Sanity itself. */
+    @FunctionalInterface
+    public interface CheckListener {
+        void checked(ServerPlayer player, Sanity sanity, Stage stage);
+    }
+
     /** How many ticks apart the continuous drains and restores are evaluated (ADR 0005). */
     public static final int EVALUATION_TICKS = 20;
 
@@ -85,6 +92,7 @@ public final class PlayerSanity {
     private static final List<Source> SOURCES = new CopyOnWriteArrayList<>();
     private static final List<StageListener> LISTENERS = new CopyOnWriteArrayList<>();
     private static final List<MoveListener> MOVE_LISTENERS = new CopyOnWriteArrayList<>();
+    private static final List<CheckListener> CHECK_LISTENERS = new CopyOnWriteArrayList<>();
     private static final Map<UUID, SanityTracker> TRACKERS = new HashMap<>();
 
     private PlayerSanity() {
@@ -111,6 +119,14 @@ public final class PlayerSanity {
         MOVE_LISTENERS.add(listener);
     }
 
+    /**
+     * Adds a listener that hears of a joined player's Sanity and Stage each time they are checked from
+     * now on: as they join, after every set, and as the config moves a threshold, whether or not either changed.
+     */
+    public static void onCheck(CheckListener listener) {
+        CHECK_LISTENERS.add(listener);
+    }
+
     public static Sanity get(ServerPlayer player) {
         return player.getData(SANITY);
     }
@@ -125,16 +141,16 @@ public final class PlayerSanity {
         return tracker == null ? 0 : tracker.netRate();
     }
 
-    /** Sets the player's Sanity now. Not from a Stage-change listener. */
+    /** Sets the player's Sanity now. Not from a Stage-change or check listener. */
     public static void set(ServerPlayer player, Sanity sanity) {
         if (notifying) {
-            throw new IllegalStateException("A Stage-change listener moved " + player.getPlainTextName() + "'s Sanity");
+            throw new IllegalStateException("A Stage-change or check listener moved " + player.getPlainTextName() + "'s Sanity");
         }
         player.setData(SANITY, sanity);
         observe(player);
     }
 
-    /** Applies an instantaneous drain (negative) or restore (positive) now. Not from a Stage-change listener. */
+    /** Applies an instantaneous drain (negative) or restore (positive) now. Not from a Stage-change or check listener. */
     public static Sanity add(ServerPlayer player, double amount) {
         var sanity = get(player).add(amount);
         set(player, sanity);
@@ -143,7 +159,7 @@ public final class PlayerSanity {
 
     /**
      * Applies a Moment, a drain (negative) or restore (positive) with a Cause, now; the move listeners
-     * hear of it if it moved Sanity. Not from a Stage-change listener.
+     * hear of it if it moved Sanity. Not from a Stage-change or check listener.
      */
     public static Sanity add(ServerPlayer player, double amount, Cause cause) {
         var before = get(player);
@@ -165,14 +181,17 @@ public final class PlayerSanity {
         if (tracker == null) {
             return;
         }
-        tracker.observe(get(player), rules).ifPresent(change -> {
-            notifying = true;
-            try {
-                LISTENERS.forEach(listener -> listener.changed(player, change));
-            } finally {
-                notifying = false;
-            }
-        });
+        var sanity = get(player);
+        var current = rules;
+        var changed = tracker.observe(sanity, current);
+        notifying = true;
+        try {
+            changed.ifPresent(change -> LISTENERS.forEach(listener -> listener.changed(player, change)));
+            var stage = current.stageOf(sanity);
+            CHECK_LISTENERS.forEach(listener -> listener.checked(player, sanity, stage));
+        } finally {
+            notifying = false;
+        }
     }
 
     @SubscribeEvent
