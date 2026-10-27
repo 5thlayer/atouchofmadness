@@ -6,9 +6,8 @@ package io.github._5thlayer.atouchofmadness.meter;
 /**
  * The trend band the Sanity meter shows, −3 to +3, which the Runtime draws as chevrons (suite
  * ADR-0005): how fast the Net rate moves Sanity, negative for a drain. Below 0.5 Sanity a minute
- * either way shows none, then one chevron below 3, two below 8 and three from 8, so Company alone
- * shows one, Low light alone two, and Low light with freezing three. Plain Java, with no Minecraft
- * types.
+ * either way shows none, then one chevron below 3, two below 8 and three from 8 (#15). Plain Java,
+ * with no Minecraft types.
  */
 public final class Trend {
 

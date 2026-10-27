@@ -26,16 +26,13 @@ class TrendTest {
             "-0.49, 0",
             "0.5, 1",
             "-0.5, -1",
-            // Company alone.
             "2, 1",
             "2.99, 1",
             "3, 2",
-            // Music alone, and Low light alone.
             "4, 2",
             "-6, -2",
             "7.99, 2",
             "-8, -3",
-            // Low light and freezing together, and every nearby hostile.
             "-10, -3",
             "-16, -3",
             "100, 3"
