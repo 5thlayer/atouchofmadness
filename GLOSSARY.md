@@ -94,6 +94,10 @@ _Avoid_: Insanity as the name of the meter, mad (the feel, not the stage)
 A harmless effect of low Sanity that only the player sees or hears, such as a fake sound or a fading screen edge.
 _Avoid_: Shadow Creature (a hallucination is never a mob)
 
+**Encroachment**:
+The Hallucination of dark shapes creeping in from the edges of the player's view, nearer as Sanity falls.
+_Avoid_: tendrils, shadows, shades (taken by Shadow Creatures)
+
 ### Shadow Creatures
 
 **Owner**:

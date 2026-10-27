@@ -25,16 +25,18 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 /**
  * Plays this client's Hallucinations from what it was last told of its player's Sanity: from Uneasy
- * down, the screen edge's colour loss and fake sounds near the player; while Insane, the view's slow
- * sway and whispers. The colour loss and the sway ease in and out rather than jump, and each has a
- * switch in the client config; vanilla's Distortion Effects slider scales the sway.
+ * down, the colour loss, the Encroachment and fake sounds near the player; while Insane, the colour loss
+ * reaching in, the view's slow sway and whispers. The colour loss, the Encroachment and the sway ease in
+ * and out rather than jump, and each has a switch in the client config; vanilla's Distortion Effects
+ * slider scales the sway and how much the Encroachment moves.
  */
 @EventBusSubscriber(modid = ATouchOfMadness.MOD_ID, value = Dist.CLIENT)
 public final class HallucinationEffects {
 
     private static final Identifier COLOUR_LOSS_LAYER = Identifier.fromNamespaceAndPath(ATouchOfMadness.MOD_ID, "colour_loss");
+    private static final Identifier ENCROACHMENT_LAYER = Identifier.fromNamespaceAndPath(ATouchOfMadness.MOD_ID, "encroachment");
 
-    /** How much of the way to its target the colour loss and the sway move each tick. */
+    /** How much of the way to its target each eased Hallucination moves each tick. */
     private static final float EASING = 0.05F;
 
     /** The sway's greatest roll and pitch, in degrees, and the ticks each takes to swing there and back. */
@@ -50,6 +52,8 @@ public final class HallucinationEffects {
     private static final float WHISPER_FARTHEST = 3;
 
     private static float colourLoss;
+    private static float colourLossReach;
+    private static float encroachment;
     private static float sway;
 
     private HallucinationEffects() {
@@ -60,7 +64,14 @@ public final class HallucinationEffects {
         // Over the world and vanilla's vignette, under the crosshair and the rest of the HUD.
         event.registerAbove(VanillaGuiLayers.CAMERA_OVERLAYS, COLOUR_LOSS_LAYER, (graphics, deltaTracker) -> {
             if (colourLoss > 0 && Minecraft.getInstance().player != null) {
-                ColourLoss.draw(graphics, colourLoss);
+                ColourLoss.draw(graphics, colourLoss, colourLossReach);
+            }
+        });
+        event.registerAbove(COLOUR_LOSS_LAYER, ENCROACHMENT_LAYER, (graphics, deltaTracker) -> {
+            var minecraft = Minecraft.getInstance();
+            if (encroachment > 0 && minecraft.player != null) {
+                float time = minecraft.player.tickCount + deltaTracker.getGameTimeDeltaPartialTick(false);
+                Encroachment.draw(graphics, encroachment, time, distortion());
             }
         });
     }
@@ -74,7 +85,10 @@ public final class HallucinationEffects {
         }
         var sanity = ClientSanity.sanity();
         var stage = ClientSanity.stage();
-        colourLoss = ease(colourLoss, MadnessClientConfig.colourLoss() ? HallucinationRules.colourLoss(sanity, stage) : 0);
+        boolean colourLossOn = MadnessClientConfig.colourLoss();
+        colourLoss = ease(colourLoss, colourLossOn ? HallucinationRules.colourLoss(sanity, stage) : 0);
+        colourLossReach = ease(colourLossReach, colourLossOn ? HallucinationRules.colourLossReach(sanity, stage) : 0);
+        encroachment = ease(encroachment, MadnessClientConfig.shapes() ? HallucinationRules.encroachment(sanity, stage) : 0);
         sway = ease(sway, MadnessClientConfig.sway() ? HallucinationRules.sway(stage) : 0);
         var random = player.getRandom();
         if (random.nextDouble() < HallucinationRules.fakeSoundChance(sanity, stage)) {
@@ -92,7 +106,7 @@ public final class HallucinationEffects {
         if (sway <= 0 || player == null) {
             return;
         }
-        float scale = sway * Minecraft.getInstance().options.screenEffectScale().get().floatValue();
+        float scale = sway * distortion();
         if (scale <= 0) {
             return;
         }
@@ -105,7 +119,14 @@ public final class HallucinationEffects {
     static void loggedOut(ClientPlayerNetworkEvent.LoggingOut event) {
         ClientSanity.forget();
         colourLoss = 0;
+        colourLossReach = 0;
+        encroachment = 0;
         sway = 0;
+    }
+
+    /** Vanilla's Distortion Effects slider, from 0 to 1. */
+    private static float distortion() {
+        return Minecraft.getInstance().options.screenEffectScale().get().floatValue();
     }
 
     private static float ease(float from, float to) {
