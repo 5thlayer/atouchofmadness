@@ -76,7 +76,7 @@ def armour():
     return out
 
 
-def edges(cell, cavity, sides):
+def on_edge(cell, cavity, sides):
     """Whether the cell is on the cavity's edge on any of these sides, each an (x, y) step."""
     return any((cell[0] + dx, cell[1] + dy) not in cavity for dx, dy in sides)
 
@@ -87,9 +87,9 @@ LEFT_AND_DOWN = ((-1, 0), (0, 1))
 
 
 def cast(mould, axis, is_grip, thinned):
-    """The tool cast in the mould, symmetric about the diagonal x + y = {@code axis} as its handle runs, less
-    the edge cells {@code thinned} leaves off: its blade or head in Umbra's lighter colours, its grip, where
-    {@code is_grip} says, in browns, each lit as the cavity's shading turned over, and outlined."""
+    """The tool cast in the mould, symmetric about the diagonal x + y = axis as its handle runs, less the edge
+    cells thinned leaves off: its blade or head in Umbra's lighter colours, its grip, where is_grip says, in
+    browns, each lit as the cavity's shading turned over, and outlined."""
     cavity = {cell for cell in cells(mould) if luminance(mould.getpixel(cell)) < CAVITY_BELOW}
     tool = {cell for cell in cavity if not thinned(cell, cavity)}
     # Only what its mirror holds too, so a stray pixel of the mould's leaves no lopsided edge.
@@ -101,7 +101,7 @@ def cast(mould, axis, is_grip, thinned):
             if part(cell):
                 image.putpixel(cell, spread(shades.index(luminance(mould.getpixel(cell))), len(shades), palette))
     for x, y in tool:
-        for edge in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+        for edge in ((x + dx, y + dy) for dx, dy in ALL_SIDES):
             if 0 <= edge[0] < image.width and 0 <= edge[1] < image.height and edge not in tool:
                 image.putpixel(edge, UMBRA[0] + (255,))
     return image
@@ -114,21 +114,26 @@ def along(cell):
 
 def sword_thinned(cell, cavity):
     # The blade, above the guard, loses a pixel from each edge; the guard and grip are too thin to.
-    return along(cell) >= -1 and edges(cell, cavity, ALL_SIDES)
+    return along(cell) >= -1 and on_edge(cell, cavity, ALL_SIDES)
+
+
+def pickaxe_haft(cell):
+    """Whether the cell is the pickaxe's haft, below its head."""
+    return along(cell) <= 1
 
 
 def pickaxe_thinned(cell, cavity):
     # The head loses its inner edge, toward the haft, and the haft both its sides, leaving its middle lane.
-    if along(cell) <= 1:
-        return edges(cell, cavity, ALL_SIDES)
-    return edges(cell, cavity, LEFT_AND_DOWN)
+    if pickaxe_haft(cell):
+        return on_edge(cell, cavity, ALL_SIDES)
+    return on_edge(cell, cavity, LEFT_AND_DOWN)
 
 
 def textures():
     out = {ITEMS / f"umbra_{name}.png": image for name, image in armour().items()}
     # The sword's grip runs from below its guard to the corner, the pickaxe's haft from below its head.
     out[ITEMS / "umbra_sword.png"] = cast(art("cast_sword.png"), 15, lambda cell: along(cell) <= -8, sword_thinned)
-    out[ITEMS / "umbra_pickaxe.png"] = cast(art("cast_pickaxe.png"), 16, lambda cell: along(cell) <= 1, pickaxe_thinned)
+    out[ITEMS / "umbra_pickaxe.png"] = cast(art("cast_pickaxe.png"), 16, pickaxe_haft, pickaxe_thinned)
     return out
 
 

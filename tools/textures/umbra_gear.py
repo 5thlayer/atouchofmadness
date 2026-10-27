@@ -15,9 +15,8 @@ from PIL import Image
 
 OUT = "src/main/resources/assets/atouchofmadness/textures/"
 
-# Umbra's own palette, from item/umbra.png, darkest first.
+# Umbra's own palette, from item/umbra.png, darkest first, less the darkest, which only outlines an icon.
 PALETTE = {
-    "o": (10, 6, 16, 255),
     "d": (22, 12, 32, 255),
     "m": (36, 20, 52, 255),
     "l": (58, 34, 84, 255),
