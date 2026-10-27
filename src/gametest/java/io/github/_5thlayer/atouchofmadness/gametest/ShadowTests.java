@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.mojang.authlib.GameProfile;
@@ -26,6 +27,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition.Weather;
+import net.minecraft.network.protocol.game.ClientboundSoundEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.PlayerChunkSender;
@@ -148,6 +151,7 @@ final class ShadowTests {
                     helper -> unrealStruck(helper, kind));
             tests.test("shadow_an_unreal_" + name + "_fades_when_approached", ShadowCreature.FADE_TICKS + 5, helper -> approached(helper, kind));
             tests.test("shadow_a_real_" + name + "_attacks_its_owner_and_can_be_killed", 200, helper -> attacks(helper, kind));
+            tests.test("shadow_sound_a_real_" + name + "_is_heard_hurt_and_dying_by_its_owner_alone", 20, helper -> heard(helper, kind));
             tests.test("shadow_a_player_standing_still_is_sent_anothers_" + name + "_only_while_insane", 20, helper -> retracked(helper, kind));
             tests.test("shadow_raising_sanity_above_twenty_turns_a_" + name + "_unreal", 2, helper -> turnsUnreal(helper, kind));
             peaceful.test("shadow_on_peaceful_a_real_" + name + "_deals_nothing_stays_and_drops_umbra", 60, helper -> onPeaceful(helper, kind));
@@ -484,42 +488,85 @@ final class ShadowTests {
         helper.succeed();
     }
 
-    /**
-     * A Sane player, still, starts being sent another's creature as they turn Insane, and stops as they
-     * turn Sane again. The creature is placed once both players' chunk is tracked, which takes the
-     * tracker a tick or two after they join, since only a move would have it ask again. Each tick both
-     * acknowledge the chunks sent them, as a client does: vanilla sends no further batch to a client
-     * that hasn't, so a first batch spent on the chunks around the grid's random start would leave
-     * the test's chunk unsent for good.
-     */
+    /** A Sane player, still, starts being sent another's creature as they turn Insane, and stops as they turn Sane again. */
     private static void retracked(GameTestHelper helper, Kind kind) {
         var owner = join(helper, new BlockPos(0, 1, 0), INSANE, GameType.SURVIVAL);
         var viewer = join(helper, new BlockPos(8, 1, 8), 60, GameType.SURVIVAL);
+        onceTracked(helper, kind, owner, viewer, creature -> {
+            expectTracked(helper, viewer, creature, false, "a Sane player");
+            PlayerSanity.set(viewer, new Sanity(GAUNTS));
+            expectTracked(helper, viewer, creature, true, "a player who turned Insane");
+            PlayerSanity.set(viewer, new Sanity(60));
+            expectTracked(helper, viewer, creature, false, "a player Sane again");
+            helper.succeed();
+        });
+    }
+
+    /** Its Owner is sent its hurt and death sounds, and a Sane player as near, who isn't sent it, is sent no sound at all. */
+    private static void heard(GameTestHelper helper, Kind kind) {
+        var owner = join(helper, new BlockPos(0, 1, 0), INSANE, GameType.SURVIVAL);
+        var sane = join(helper, new BlockPos(8, 1, 8), 60, GameType.SURVIVAL);
+        onceTracked(helper, kind, owner, sane, creature -> {
+            TestPlayers.sent(owner);
+            TestPlayers.sent(sane);
+            creature.hurtServer(helper.getLevel(), owner.damageSources().playerAttack(owner), 1);
+            // Past the hit's invulnerability, so the kill is a full hit, which alone sounds.
+            creature.invulnerableTime = 0;
+            creature.hurtServer(helper.getLevel(), owner.damageSources().playerAttack(owner), 1000);
+            if (!creature.isDeadOrDying()) {
+                helper.fail("a Real " + kind.name() + " was not killed by its Owner: the fixture tests nothing");
+            }
+            long toSane = TestPlayers.sent(sane).stream()
+                    .filter(packet -> packet instanceof ClientboundSoundPacket || packet instanceof ClientboundSoundEntityPacket)
+                    .count();
+            if (toSane != 0) {
+                helper.fail("a Sane player, who isn't sent a " + kind.name() + ", was sent " + toSane + " sounds as it was hurt and died");
+            }
+            long toOwner = TestPlayers.sent(owner).stream()
+                    .filter(packet -> packet instanceof ClientboundSoundPacket sound
+                            && creature.position().closerThan(new Vec3(sound.getX(), sound.getY(), sound.getZ()), 1))
+                    .count();
+            if (toOwner != 2) {
+                helper.fail("the Owner was sent " + toOwner + " sounds where their " + kind.name() + " was hurt and died, not 2");
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Places a creature of the kind for the Owner in the middle, with no AI, once both players' chunk is
+     * tracked, and the tick after runs {@code test} on it, which the Owner is sent by then. The chunk is
+     * tracked a tick or two after they join, since only a move would have the tracker ask again. Each
+     * tick both acknowledge the chunks sent them, as a client does: vanilla sends no further batch to a
+     * client that hasn't, so a first batch spent on the chunks around the grid's random start would
+     * leave the test's chunk unsent for good.
+     */
+    private static void onceTracked(GameTestHelper helper, Kind kind, ServerPlayer owner, ServerPlayer other, Consumer<ShadowCreature> test) {
         var chunkMap = helper.getLevel().getChunkSource().chunkMap;
         var chunk = ChunkPos.containing(helper.absolutePos(MIDDLE));
         ShadowCreature[] creature = {null};
+        boolean[] done = {false};
         helper.onEachTick(() -> {
+            if (done[0]) {
+                return;
+            }
             if (creature[0] == null) {
-                for (var player : List.of(owner, viewer)) {
+                for (var player : List.of(owner, other)) {
                     player.connection.chunkSender.onChunkBatchReceivedByClient(PlayerChunkSender.MAX_CHUNKS_PER_TICK);
                 }
                 var players = chunkMap.getPlayers(chunk, false);
-                if (players.contains(owner) && players.contains(viewer)) {
+                if (players.contains(owner) && players.contains(other)) {
                     creature[0] = place(helper, kind, owner, MIDDLE);
                     creature[0].setNoAi(true);
                     TestPlayers.whenDone(helper, () -> TRACKING.removeIf(key -> key.endsWith("/" + creature[0].getId())));
                 }
                 return;
             }
+            done[0] = true;
             if (!TRACKING.contains(tracking(owner, creature[0]))) {
                 helper.fail("the Owner is not sent their " + kind.name() + ": the fixture tests nothing");
             }
-            expectTracked(helper, viewer, creature[0], false, "a Sane player");
-            PlayerSanity.set(viewer, new Sanity(GAUNTS));
-            expectTracked(helper, viewer, creature[0], true, "a player who turned Insane");
-            PlayerSanity.set(viewer, new Sanity(60));
-            expectTracked(helper, viewer, creature[0], false, "a player Sane again");
-            helper.succeed();
+            test.accept(creature[0]);
         });
     }
 

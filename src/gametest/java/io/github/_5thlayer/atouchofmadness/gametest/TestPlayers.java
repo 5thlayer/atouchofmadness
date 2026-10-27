@@ -3,7 +3,11 @@
 
 package io.github._5thlayer.atouchofmadness.gametest;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.logging.LogUtils;
@@ -25,6 +29,9 @@ import net.minecraft.world.level.storage.TagValueInput;
  * alone, and logged out again however the test ends, so a failure leaves no player behind.
  */
 final class TestPlayers {
+
+    /** Each joined player's channel, by their id, which keeps every packet the server sends them. */
+    private static final Map<UUID, EmbeddedChannel> CHANNELS = new ConcurrentHashMap<>();
 
     private TestPlayers() {
     }
@@ -51,7 +58,7 @@ final class TestPlayers {
                     .ifPresent(player::load);
         }
         var connection = new Connection(PacketFlow.SERVERBOUND);
-        new EmbeddedChannel(connection);
+        CHANNELS.put(profile.id(), new EmbeddedChannel(connection));
         playerList(helper).placeNewPlayer(connection, player, cookie);
         return player;
     }
@@ -62,6 +69,23 @@ final class TestPlayers {
         if (player != null) {
             playerList(helper).remove(player);
         }
+        CHANNELS.remove(profile.id());
+    }
+
+    /** The packets sent the player since they joined or this was last asked, which it forgets. */
+    static List<Object> sent(ServerPlayer player) {
+        var channel = CHANNELS.get(player.getUUID());
+        if (channel == null) {
+            return List.of();
+        }
+        channel.flushOutbound();
+        var sent = new ArrayList<>();
+        var packet = channel.readOutbound();
+        while (packet != null) {
+            sent.add(packet);
+            packet = channel.readOutbound();
+        }
+        return sent;
     }
 
     /** Runs {@code done} when the test passes or fails, at whatever tick. */

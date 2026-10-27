@@ -11,12 +11,15 @@ import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Stage;
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
@@ -33,6 +36,7 @@ import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.event.EventHooks;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -273,16 +277,48 @@ public abstract class ShadowCreature extends PathfinderMob {
         return isReal() ? null : ShadowSounds.MURMUR.get();
     }
 
-    /**
-     * Played by each client it is sent to, its Owner and the Insane, and never by the server, which
-     * would play it to every player near, whether or not they can see it (ADR 0002).
-     */
+    /** Played by each client it is sent to, its Owner and the Insane, and never by the server. */
     @Override
     public void playAmbientSound() {
         var sound = getAmbientSound();
         if (level().isClientSide() && sound != null && !isSilent()) {
             level().playLocalSound(this, sound, getSoundSource(), getSoundVolume(), getVoicePitch());
         }
+    }
+
+    /**
+     * Its hurt and death sounds, and any other vanilla plays from it, go only to the players it is sent
+     * to, its Owner and the Insane, within the sound's range, where the creature is: the server's own
+     * way would play them to every player near, whether or not they can see it (ADR 0002). NeoForge's
+     * sound event still fires, as on the server's way.
+     */
+    @Override
+    public void playSound(SoundEvent sound, float volume, float pitch) {
+        if (isSilent() || !(level() instanceof ServerLevel level)) {
+            return;
+        }
+        var event = EventHooks.onPlaySoundAtPosition(level, getX(), getY(), getZ(), BuiltInRegistries.SOUND_EVENT.wrapAsHolder(sound),
+                getSoundSource(), volume, pitch);
+        if (event.isCanceled() || event.getSound() == null) {
+            return;
+        }
+        double range = event.getSound().value().getRange(event.getNewVolume());
+        var packet = new ClientboundSoundPacket(event.getSound(), event.getSource(), getX(), getY(), getZ(), event.getNewVolume(),
+                event.getNewPitch(), getRandom().nextLong());
+        level.getChunkSource().chunkMap.sendToTrackingPlayersFiltered(this, packet, player -> player.distanceToSqr(this) <= range * range);
+    }
+
+    /** As vanilla's, but its burn played as its other sounds are. */
+    @Override
+    public void lavaHurt() {
+        if (!fireImmune() && level() instanceof ServerLevel level && hurtServer(level, damageSources().lava(), 4) && shouldPlayLavaHurtSound()) {
+            playSound(SoundEvents.GENERIC_BURN, 0.4F, 2 + getRandom().nextFloat() * 0.4F);
+        }
+    }
+
+    @Override
+    protected void playEntityOnFireExtinguishedSound() {
+        playSound(SoundEvents.GENERIC_EXTINGUISH_FIRE, 0.7F, 1.6F + (getRandom().nextFloat() - getRandom().nextFloat()) * 0.4F);
     }
 
     @Override
