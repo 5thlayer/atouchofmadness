@@ -9,11 +9,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import io.github._5thlayer.atouchofmadness.sanity.Sanity;
+
 /**
  * The trend band the meter shows for a net rate: 0 below 0.5 Sanity a minute either way, ±1 below 3,
- * ±2 below 8 and ±3 from 8, negative for a drain.
+ * ±2 below 8 and ±3 from 8, negative for a drain; and 0 at the end of the range the rate pushes toward.
  */
 class TrendTest {
+
+    private static final Sanity MID = new Sanity(50);
 
     private static double perTick(double perMinute) {
         return perMinute / (20 * 60);
@@ -38,18 +42,40 @@ class TrendTest {
             "100, 3"
     })
     void aNetRateFallsInItsBand(double perMinute, int band) {
-        assertEquals(band, Trend.band(perTick(perMinute)));
+        assertEquals(band, Trend.band(MID, perTick(perMinute)));
     }
 
     @Test
     void theBandIsSymmetric() {
         for (double perMinute = 0; perMinute < 12; perMinute += 0.25) {
-            assertEquals(-Trend.band(perTick(perMinute)), Trend.band(perTick(-perMinute)), perMinute + "/min");
+            assertEquals(-Trend.band(MID, perTick(perMinute)), Trend.band(MID, perTick(-perMinute)), perMinute + "/min");
         }
     }
 
     @Test
     void aNonNumberShowsNoTrend() {
-        assertEquals(0, Trend.band(Double.NaN));
+        assertEquals(0, Trend.band(MID, Double.NaN));
+    }
+
+    @Test
+    void aRestoreAtFullShowsNoTrend() {
+        assertEquals(0, Trend.band(new Sanity(Sanity.MAX), perTick(4)));
+    }
+
+    @Test
+    void aDrainAtEmptyShowsNoTrend() {
+        assertEquals(0, Trend.band(new Sanity(Sanity.MIN), perTick(-6)));
+    }
+
+    @Test
+    void aDrainAtFullAndARestoreAtEmptyStillShow() {
+        assertEquals(-2, Trend.band(new Sanity(Sanity.MAX), perTick(-6)));
+        assertEquals(2, Trend.band(new Sanity(Sanity.MIN), perTick(4)));
+    }
+
+    @Test
+    void justShortOfAnEndStillShows() {
+        assertEquals(2, Trend.band(new Sanity(99.99), perTick(4)));
+        assertEquals(-2, Trend.band(new Sanity(0.01), perTick(-6)));
     }
 }
