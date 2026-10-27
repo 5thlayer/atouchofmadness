@@ -5,3 +5,28 @@ Each entry names the files, their author, where they came from and the licence t
 file listed here is NOT covered by the licence this repository states for its own work; its own
 licence governs it. Which licence covers which file is REUSE.toml's to say; this list is the
 credits for what was copied in.
+
+Umbra Gear
+----------
+
+Files:   data/art/armor_helmet_lead.png
+         data/art/armor_chest_lead.png
+         data/art/armor_legs_lead.png
+         data/art/armor_boots_lead.png
+         data/art/cast_sword.png
+         data/art/cast_pickaxe.png
+         src/main/resources/assets/atouchofmadness/textures/item/umbra_helmet.png
+         src/main/resources/assets/atouchofmadness/textures/item/umbra_chestplate.png
+         src/main/resources/assets/atouchofmadness/textures/item/umbra_leggings.png
+         src/main/resources/assets/atouchofmadness/textures/item/umbra_boots.png
+         src/main/resources/assets/atouchofmadness/textures/item/umbra_sword.png
+         src/main/resources/assets/atouchofmadness/textures/item/umbra_pickaxe.png
+Author:  Malcolm Riley
+Source:  https://github.com/malcolmriley/unused-textures
+         items/armor_{helmet,chest,legs,boots}_lead.png and blocks/cast_sword.png and
+         blocks/cast_pickaxe.png, at commit 8b85ad732023174d9a9da74e6bf2272d6c0bef17. The files under
+         data/art/ are the unmodified copies. The armour icons are built from his lead armour by
+         scripts/build-textures.py, which recolours it to Umbra's palette; the sword and the pickaxe are
+         cast from his moulds' cavities, shaded in Umbra's palette with a brown grip.
+Licence: Creative Commons Attribution 4.0 International
+         https://creativecommons.org/licenses/by/4.0/
