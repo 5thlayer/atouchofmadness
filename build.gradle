@@ -5,11 +5,13 @@ plugins {
     id 'io.github.5thlayer.libworks.module' version '0.4.4'
 }
 
+// A Touch Of's Runtime, which draws the Sanity meter (suite ADR-0005), and which a Pillar nests.
+def atouchofRange = '[0.1.0,0.2)'
+
 // What the Module requires of other Modules, each as a range (libworks ADR 0003):
 libworks {
-    // A Touch Of's Runtime, which draws the Sanity meter (suite ADR-0005) and which the jar nests below.
     // A Pillar nests no libworks-runtime (suite ADR-0002), so its game tests run without libworks-gametest.
-    upstream('atouchof') { range = '[0.1.0,0.2)' }
+    upstream('atouchof') { range = atouchofRange }
 }
 
 repositories {
@@ -43,7 +45,7 @@ tasks.named('runClient') { dependsOn syncClientMods }
 dependencies {
     jarJar('io.github.5thlayer:atouchof') {
         version {
-            strictly '[0.1.0,0.2)'
+            strictly atouchofRange
             prefer '0.1.0'
         }
     }

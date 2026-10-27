@@ -22,8 +22,8 @@ import net.neoforged.fml.config.ModConfig;
  * The Pillar's entry point. It registers the Pillar's own creative tab, each player's Sanity, the
  * drains of where they stand, the drain and restore of who is near, the restore of music, the Flower
  * Crown, the moments that move it at once, the Shadow Creatures and Umbra, discovery, Hallucinations,
- * the Sanity meter the Runtime draws, and the common and client configs. The game tests hook themselves in from the {@code gametest}
- * source set, which never ships (libworks ADR 0011).
+ * the Sanity meter the Runtime draws, and the common and client configs. The game tests hook
+ * themselves in from the {@code gametest} source set, which never ships (libworks ADR 0011).
  */
 @Mod(ATouchOfMadness.MOD_ID)
 public final class ATouchOfMadness {

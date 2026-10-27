@@ -23,8 +23,7 @@ import net.minecraft.world.phys.Vec3;
 /**
  * The Sanity meter: each tick the Pillar hands the Runtime a player's Sanity, as the half steps the
  * Runtime sends, their Stage's index and the trend band of their Net rate. What the Runtime draws
- * from it is checked by hand in the dev client, which no game test loads. Each test joins a player of
- * its own and logs them out however it ends.
+ * from it is checked by hand in the dev client, which no game test loads.
  */
 final class MeterTests {
 
