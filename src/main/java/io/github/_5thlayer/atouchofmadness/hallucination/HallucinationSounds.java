@@ -13,8 +13,8 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
- * The Pillar's sound events, each with a subtitle in {@code sounds.json}: the fake sounds of
- * Hallucinations, whose subtitles are uncertain ("Something hisses?"), and the Shadow Creatures' own.
+ * The sounds of Hallucinations, each with a subtitle in {@code sounds.json}, an uncertain one
+ * ("Something hisses?"), since nothing made them.
  */
 public final class HallucinationSounds {
 
@@ -26,11 +26,6 @@ public final class HallucinationSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> CAVE = register("hallucination.cave");
     public static final DeferredHolder<SoundEvent, SoundEvent> DOOR = register("hallucination.door");
     public static final DeferredHolder<SoundEvent, SoundEvent> WHISPER = register("hallucination.whisper");
-
-    /** An Unreal Shadow Creature's, now and then as it stalks. */
-    public static final DeferredHolder<SoundEvent, SoundEvent> MURMUR = register("shadow.murmur");
-    /** A Real Shadow Creature's, as it attacks. */
-    public static final DeferredHolder<SoundEvent, SoundEvent> CRY = register("shadow.cry");
 
     /** The fake sounds that play near a player from Uneasy down, one picked at random each time. */
     public static final List<DeferredHolder<SoundEvent, SoundEvent>> FAKE = List.of(HISS, GROAN, FOOTSTEPS, CAVE, DOOR);

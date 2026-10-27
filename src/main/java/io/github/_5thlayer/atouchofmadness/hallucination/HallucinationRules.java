@@ -12,8 +12,12 @@ import io.github._5thlayer.atouchofmadness.sanity.Stage;
  */
 public final class HallucinationRules {
 
-    /** The mean seconds between fake sounds at full Sanity and at none, from Uneasy down; between, it falls in a line. */
+    /**
+     * The mean seconds between fake sounds, from Uneasy down, fall in a line through these two: 110 at
+     * full Sanity, a point the line passes through but a player Uneasy never reaches, so 60 at 50, ...
+     */
     static final double FAKE_SOUND_SECONDS_AT_FULL = 110;
+    /** ... and 10 at none. */
     static final double FAKE_SOUND_SECONDS_AT_EMPTY = 10;
 
     /** The mean seconds between whispers while Insane. */

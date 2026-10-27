@@ -7,7 +7,6 @@ import java.util.EnumSet;
 import java.util.UUID;
 import java.util.function.Function;
 
-import io.github._5thlayer.atouchofmadness.hallucination.HallucinationSounds;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Stage;
@@ -17,12 +16,12 @@ import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityEvent;
 import net.minecraft.world.entity.EntityType;
@@ -271,7 +270,7 @@ public abstract class ShadowCreature extends PathfinderMob {
     /** An Unreal creature murmurs now and then as it stalks; a Real one is silent until it attacks. */
     @Override
     protected @Nullable SoundEvent getAmbientSound() {
-        return isReal() ? null : HallucinationSounds.MURMUR.get();
+        return isReal() ? null : ShadowSounds.MURMUR.get();
     }
 
     /**
@@ -290,7 +289,7 @@ public abstract class ShadowCreature extends PathfinderMob {
     public void handleEntityEvent(byte id) {
         if (id == EntityEvent.START_ATTACKING) {
             if (!isSilent()) {
-                level().playLocalSound(this, HallucinationSounds.CRY.get(), getSoundSource(), getSoundVolume(), getVoicePitch());
+                level().playLocalSound(this, ShadowSounds.CRY.get(), getSoundSource(), getSoundVolume(), getVoicePitch());
             }
         } else {
             super.handleEntityEvent(id);

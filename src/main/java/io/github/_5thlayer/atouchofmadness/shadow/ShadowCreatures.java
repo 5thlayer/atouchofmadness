@@ -72,6 +72,7 @@ public final class ShadowCreatures {
     public static void register(IEventBus modBus) {
         ENTITIES.register(modBus);
         ITEMS.register(modBus);
+        ShadowSounds.register(modBus);
         modBus.addListener(EntityAttributeCreationEvent.class, ShadowCreatures::attributes);
         modBus.addListener(ModConfigEvent.Loading.class, ShadowCreatures::configChanged);
         modBus.addListener(ModConfigEvent.Reloading.class, ShadowCreatures::configChanged);

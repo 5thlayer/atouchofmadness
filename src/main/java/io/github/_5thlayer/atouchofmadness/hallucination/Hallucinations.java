@@ -23,7 +23,8 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
  * Hallucinations: harmless effects of low Sanity that only the player sees or hears, all played by
  * their own client. The server tells each player's client their Sanity and Stage in a payload of the
  * Pillar's own, {@link SanityPayload}, as they join and whenever either changes, from a threshold the
- * config moves too. The client's side is in {@code hallucination.client}.
+ * config moves too. The Shadow Creatures' own sounds are no Hallucination's: they are
+ * in {@code ShadowSounds}. The client's side is in {@code hallucination.client}.
  */
 public final class Hallucinations {
 
