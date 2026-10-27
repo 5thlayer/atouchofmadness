@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "atouchofmadness:umbra"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "atouchofmadness:umbra"
+      }
+    ]
+  }
+}

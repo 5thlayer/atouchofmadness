@@ -29,7 +29,9 @@ public enum Cause {
     /** A hit from a Real Shadow Creature. */
     SHADOW_STRIKE,
     /** A player's kill of a Real Shadow Creature, one cause for both kinds. */
-    SHADOW_KILL;
+    SHADOW_KILL,
+    /** Any piece of Umbra Gear in use, one cause for all of them. */
+    UMBRA_GEAR;
 
     /** Its id, as data names it: {@code low_light}. */
     public String id() {

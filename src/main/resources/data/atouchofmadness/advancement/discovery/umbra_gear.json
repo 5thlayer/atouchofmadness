@@ -1,0 +1,31 @@
+{
+  "parent": "atouchofmadness:discovery/root",
+  "criteria": {
+    "umbra_gear": {
+      "trigger": "atouchofmadness:sanity_changed",
+      "conditions": {
+        "source": "umbra_gear"
+      }
+    }
+  },
+  "display": {
+    "announce_to_chat": false,
+    "description": {
+      "translate": "advancements.atouchofmadness.discovery.umbra_gear.description"
+    },
+    "frame": "task",
+    "hidden": true,
+    "icon": {
+      "id": "atouchofmadness:umbra_sword"
+    },
+    "show_toast": true,
+    "title": {
+      "translate": "advancements.atouchofmadness.discovery.umbra_gear.title"
+    }
+  },
+  "requirements": [
+    [
+      "umbra_gear"
+    ]
+  ]
+}

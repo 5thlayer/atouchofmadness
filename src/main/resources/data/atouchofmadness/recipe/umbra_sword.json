@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "U": "atouchofmadness:umbra",
+    "S": "minecraft:stick"
+  },
+  "pattern": [
+    "U",
+    "U",
+    "S"
+  ],
+  "result": {
+    "id": "atouchofmadness:umbra_sword"
+  }
+}

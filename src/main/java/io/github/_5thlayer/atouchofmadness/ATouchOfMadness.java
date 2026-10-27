@@ -12,6 +12,7 @@ import io.github._5thlayer.atouchofmadness.music.MusicSource;
 import io.github._5thlayer.atouchofmadness.nearby.NearbySources;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.shadow.ShadowCreatures;
+import io.github._5thlayer.atouchofmadness.umbra.UmbraGear;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -20,9 +21,9 @@ import net.neoforged.fml.config.ModConfig;
 /**
  * The Pillar's entry point. It registers the Pillar's own creative tab, each player's Sanity, the
  * drains of where they stand, the drain and restore of who is near, the restore of music, the Flower
- * Crown, the moments that move it at once, the Shadow Creatures and Umbra, discovery, Hallucinations,
- * and the common and client configs. The game tests hook themselves in from the {@code gametest}
- * source set, which never ships (libworks ADR 0011).
+ * Crown, the moments that move it at once, the Shadow Creatures and Umbra, Umbra Gear, discovery,
+ * Hallucinations, and the common and client configs. The game tests hook themselves in from the
+ * {@code gametest} source set, which never ships (libworks ADR 0011).
  */
 @Mod(ATouchOfMadness.MOD_ID)
 public final class ATouchOfMadness {
@@ -41,6 +42,7 @@ public final class ATouchOfMadness {
         FlowerCrown.register(modBus);
         Moments.register(modBus);
         ShadowCreatures.register(modBus);
+        UmbraGear.register(modBus);
         Discovery.register(modBus);
         Hallucinations.register(modBus);
     }

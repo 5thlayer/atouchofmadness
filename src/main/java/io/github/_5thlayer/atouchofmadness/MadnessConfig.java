@@ -13,13 +13,14 @@ import io.github._5thlayer.atouchofmadness.nearby.NearbyRules;
 import io.github._5thlayer.atouchofmadness.sanity.Sanity;
 import io.github._5thlayer.atouchofmadness.sanity.SanityRules;
 import io.github._5thlayer.atouchofmadness.shadow.ShadowRules;
+import io.github._5thlayer.atouchofmadness.umbra.UmbraRules;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * The common config, {@code atouchofmadness-common.toml}: where Sanity starts and where its stages
  * begin, the drains of where a player stands, the drain and restore of who is near, the restore of
- * music, the restores of sleep and flowers, the Flower Crown, the Shadow Creatures, and whether discovery
- * hides what each does.
+ * music, the restores of sleep and flowers, the Flower Crown, the Shadow Creatures, the drains of
+ * Umbra Gear, and whether discovery hides what each does.
  */
 public final class MadnessConfig {
 
@@ -204,6 +205,23 @@ public final class MadnessConfig {
 
     static {
         BUILDER.pop();
+        BUILDER.comment("Umbra Gear's drains, each in Sanity a minute; nothing drains while only carried.").push("umbra");
+    }
+
+    private static final ModConfigSpec.DoubleValue UMBRA_SWORD = BUILDER
+            .comment("The drain while a player holds an Umbra Sword, for each hand that holds one.")
+            .defineInRange("sword", UmbraRules.DEFAULT.sword(), 0, Sanity.MAX);
+
+    private static final ModConfigSpec.DoubleValue UMBRA_PICKAXE = BUILDER
+            .comment("The drain while a player holds an Umbra Pickaxe, for each hand that holds one.")
+            .defineInRange("pickaxe", UmbraRules.DEFAULT.pickaxe(), 0, Sanity.MAX);
+
+    private static final ModConfigSpec.DoubleValue UMBRA_ARMOUR = BUILDER
+            .comment("The drain for each piece of Umbra Armour a player wears.")
+            .defineInRange("armour", UmbraRules.DEFAULT.armour(), 0, Sanity.MAX);
+
+    static {
+        BUILDER.pop();
         BUILDER.comment("Discovery: what a player learns of Sanity by meeting it.").push("discovery");
     }
 
@@ -284,5 +302,13 @@ public final class MadnessConfig {
             return CrownRules.DEFAULT;
         }
         return new CrownRules(CROWN_RESTORE.get(), CROWN_WEAR_DAYS.get());
+    }
+
+    /** The defaults until the config loads. */
+    public static UmbraRules umbraRules() {
+        if (!SPEC.isLoaded()) {
+            return UmbraRules.DEFAULT;
+        }
+        return new UmbraRules(UMBRA_SWORD.get(), UMBRA_PICKAXE.get(), UMBRA_ARMOUR.get());
     }
 }

@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "U": "atouchofmadness:umbra"
+  },
+  "pattern": [
+    "UUU",
+    "U U"
+  ],
+  "result": {
+    "id": "atouchofmadness:umbra_helmet"
+  }
+}

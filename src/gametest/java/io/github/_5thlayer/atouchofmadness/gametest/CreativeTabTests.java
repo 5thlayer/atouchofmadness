@@ -23,7 +23,8 @@ import net.minecraft.world.item.ItemStack;
 final class CreativeTabTests {
 
     /** The paths of the Pillar's items, as its tab shows them. */
-    private static final List<String> TAB_ORDER = List.of("flower_crown", "umbra");
+    private static final List<String> TAB_ORDER = List.of("flower_crown", "umbra", "umbra_sword", "umbra_pickaxe", "umbra_helmet",
+            "umbra_chestplate", "umbra_leggings", "umbra_boots");
 
     private CreativeTabTests() {
     }
