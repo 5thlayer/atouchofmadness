@@ -72,6 +72,7 @@ final class EnvironmentTests {
         tests.test("environment_the_nether_drains_one", ticks, helper -> expectDrainIn(helper, Level.NETHER, 130, 1));
 
         tests.test("environment_only_the_overworld_has_a_moon", 1, EnvironmentTests::onlyTheOverworldHasAMoon);
+        tests.test("environment_a_datapack_makes_the_end_unsettling", 1, EnvironmentTests::theEndIsUnsettling);
 
         var newMoon = tests.under("new_moon_night", new Sky(Sky.NEW_MOON_MIDNIGHT, Weather.Type.CLEAR));
         newMoon.test("environment_a_moonless_night_under_open_sky_drains_six", ticks, helper -> expectDrain(helper, MIDDLE, 6));
@@ -94,6 +95,20 @@ final class EnvironmentTests {
             boolean hasMoon = EnvironmentDrains.hasMoon(server.getLevel(dimension).dimensionType());
             if (hasMoon != (dimension == Level.OVERWORLD)) {
                 helper.fail(dimension.identifier() + (hasMoon ? " has a moon" : " has no moon"));
+            }
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The game-test pack adds the End to {@code #atouchofmadness:unsettling}, beside the Nether by default.
+     * How an unsettling dimension drains is the Nether's test; this reads the tag, which needs no light.
+     */
+    private static void theEndIsUnsettling(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        for (var dimension : List.of(Level.NETHER, Level.END)) {
+            if (!server.getLevel(dimension).dimensionTypeRegistration().is(EnvironmentDrains.UNSETTLING)) {
+                helper.fail(dimension.identifier() + " is not in " + EnvironmentDrains.UNSETTLING.location());
             }
         }
         helper.succeed();
