@@ -28,6 +28,7 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition.Weather;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.PlayerChunkSender;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -486,7 +487,10 @@ final class ShadowTests {
     /**
      * A Sane player, still, starts being sent another's creature as they turn Insane, and stops as they
      * turn Sane again. The creature is placed once both players' chunk is tracked, which takes the
-     * tracker a tick or two after they join, since only a move would have it ask again.
+     * tracker a tick or two after they join, since only a move would have it ask again. Each tick both
+     * acknowledge the chunks sent them, as a client does: vanilla sends no further batch to a client
+     * that hasn't, so a first batch spent on the chunks around the grid's random start would leave
+     * the test's chunk unsent for good.
      */
     private static void retracked(GameTestHelper helper, Kind kind) {
         var owner = join(helper, new BlockPos(0, 1, 0), INSANE, GameType.SURVIVAL);
@@ -496,6 +500,9 @@ final class ShadowTests {
         ShadowCreature[] creature = {null};
         helper.onEachTick(() -> {
             if (creature[0] == null) {
+                for (var player : List.of(owner, viewer)) {
+                    player.connection.chunkSender.onChunkBatchReceivedByClient(PlayerChunkSender.MAX_CHUNKS_PER_TICK);
+                }
                 var players = chunkMap.getPlayers(chunk, false);
                 if (players.contains(owner) && players.contains(viewer)) {
                     creature[0] = place(helper, kind, owner, MIDDLE);
