@@ -98,9 +98,10 @@ final class CrownTests {
             if (helper.getTick() < READ_AT) {
                 return;
             }
-            // Wear comes once a second, by the second's ticks.
+            // Wear comes once a second, by the second's ticks: n ticks hold n / 20 evaluations rounded
+            // either way, as the player's own tick of the second falls, so the wear is within a second of n.
             int wear = player.getItemBySlot(EquipmentSlot.HEAD).getDamageValue();
-            if (wear % PlayerSanity.EVALUATION_TICKS != 0 || wear > ticked[0] || wear <= ticked[0] - PlayerSanity.EVALUATION_TICKS) {
+            if (wear % PlayerSanity.EVALUATION_TICKS != 0 || Math.abs(wear - ticked[0]) >= PlayerSanity.EVALUATION_TICKS) {
                 helper.fail("worn " + ticked[0] + " ticks, the crown has " + wear + " wear");
                 return;
             }

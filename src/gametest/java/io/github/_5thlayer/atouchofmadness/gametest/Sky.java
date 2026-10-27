@@ -16,8 +16,9 @@ import net.minecraft.world.clock.WorldClocks;
 /**
  * A batch's time of day and weather, both in full from its first tick: the Overworld clock at
  * {@code time}, which picks the moon's phase too, and the weather with the rain and thunder already
- * at their height rather than easing in over five seconds. Teardown puts both back as they were,
- * eased out at once too, so no rain lingers into the next batch.
+ * at their height rather than easing in over five seconds. The clock is paused for the batch, so
+ * however long the batch waits before its tests start, its sky is the one it set. Teardown puts all
+ * back as it was, eased out at once too, so no rain lingers into the next batch.
  */
 record Sky(int time, Weather.Type weather) implements TestEnvironmentDefinition<Sky.Before> {
 
@@ -40,6 +41,7 @@ record Sky(int time, Weather.Type weather) implements TestEnvironmentDefinition<
         var before = new Before(clocks.getTotalTicks(overworldClock(level)), level.getRainLevel(1), level.getThunderLevel(1),
                 TestEnvironmentDefinition.activate(new Weather(weather), level));
         clocks.setTotalTicks(overworldClock(level), time);
+        clocks.setPaused(overworldClock(level), true);
         level.setRainLevel(weather == Weather.Type.CLEAR ? 0 : 1);
         level.setThunderLevel(weather == Weather.Type.THUNDER ? 1 : 0);
         level.updateSkyBrightness();
@@ -48,7 +50,9 @@ record Sky(int time, Weather.Type weather) implements TestEnvironmentDefinition<
 
     @Override
     public void teardown(ServerLevel level, Before before) {
-        level.getServer().clockManager().setTotalTicks(overworldClock(level), before.time());
+        var clocks = level.getServer().clockManager();
+        clocks.setTotalTicks(overworldClock(level), before.time());
+        clocks.setPaused(overworldClock(level), false);
         before.weather().teardown();
         level.setRainLevel(before.rain());
         level.setThunderLevel(before.thunder());

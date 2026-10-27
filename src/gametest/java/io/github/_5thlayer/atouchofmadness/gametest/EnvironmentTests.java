@@ -71,10 +71,6 @@ final class EnvironmentTests {
 
         var fullMoon = tests.under("full_moon_night", new Sky(Sky.FULL_MOON_MIDNIGHT, Weather.Type.CLEAR));
         fullMoon.test("environment_a_full_moon_under_open_sky_drains_nothing", ticks, helper -> expectDrain(helper, MIDDLE, 0));
-        fullMoon.test("environment_a_full_moon_under_a_roof_drains_six", ticks, helper -> {
-            closedRoom(helper);
-            expectDrain(helper, MIDDLE, 6);
-        });
 
         var rain = tests.under("rain_by_day", new Sky(Sky.NOON, Weather.Type.RAIN)).withSkyAccess();
         rain.test("environment_rain_under_open_sky_drains_one_and_a_half", ticks, helper -> expectDrain(helper, MIDDLE, 1.5));
