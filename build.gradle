@@ -5,11 +5,13 @@ plugins {
     id 'io.github.5thlayer.libworks.module' version '0.4.4'
 }
 
+// A Touch Of's Runtime, which draws the Sanity meter (suite ADR-0005), and which a Pillar nests.
+def atouchofRange = '[0.1.1,0.2)'
+
 // What the Module requires of other Modules, each as a range (libworks ADR 0003):
 libworks {
-    // upstream('groundworks') { range = '[0.4.0,0.5)' }
-    // No runtime: a Pillar nests neither libworks-runtime nor, yet, A Touch Of's Runtime (suite
-    // ADR-0002), so its game tests run without libworks-gametest.
+    // A Pillar nests no libworks-runtime (suite ADR-0002), so its game tests run without libworks-gametest.
+    upstream('atouchof') { range = atouchofRange }
 }
 
 repositories {
@@ -41,6 +43,12 @@ def syncClientMods = tasks.register('syncClientMods', Sync) {
 tasks.named('runClient') { dependsOn syncClientMods }
 
 dependencies {
+    jarJar('io.github.5thlayer:atouchof') {
+        version {
+            strictly atouchofRange
+            prefer '0.1.0'
+        }
+    }
     // Jade for 26.1.2 is built on NeoForge 26.1.2.76, so it runs on our .77. Jade finds the Pillar's
     // plugin by its annotation, and only compat/jade names its types, so the Pillar runs without it (#19).
     compileOnly 'maven.modrinth:jade:26.1.11+neoforge'

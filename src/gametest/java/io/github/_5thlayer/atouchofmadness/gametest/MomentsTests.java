@@ -7,12 +7,16 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import com.mojang.authlib.GameProfile;
+import io.github._5thlayer.atouchof.signal.Strike;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Sanity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.gametest.framework.TestEnvironmentDefinition;
+import net.minecraft.gametest.framework.TestEnvironmentDefinition.Weather;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.BoneMealItem;
 import net.minecraft.world.item.ItemStack;
@@ -30,8 +34,9 @@ import net.minecraft.world.phys.Vec3;
 /**
  * The instantaneous drains and restores: eating a food moves Sanity by its Sanity Modifier, a slice of
  * cake from the placed block by the cake's, waking as the night skips restores 40 while getting up from
- * bed restores nothing, and breaking a flower restores 1. Each test stands a player at 50 Sanity
- * on the platform at noon, where nothing continuous applies, does the thing through vanilla's own path
+ * bed restores nothing, breaking a flower restores 1, and a Strike by the Dark, raised as the Runtime's
+ * signal, takes 10 on Peaceful as on Hard. Each test stands a player at 50 Sanity on the platform at
+ * noon, where nothing continuous applies, does the thing through vanilla's own path, or the Runtime's,
  * and reads how far Sanity moved.
  */
 final class MomentsTests {
@@ -74,6 +79,12 @@ final class MomentsTests {
                 helper -> expectAtOnce(helper, player -> wakeInBed(helper, player, false), 40));
         tests.test("moments_getting_up_from_bed_restores_nothing", 1,
                 helper -> expectAtOnce(helper, player -> wakeInBed(helper, player, true), 0));
+        // Raised as A Touch of Darkness raises it; on Peaceful its damage would be nothing, but not its cost.
+        for (var difficulty : new Difficulty[] {Difficulty.PEACEFUL, Difficulty.HARD}) {
+            String name = difficulty.getSerializedName();
+            tests.under("moments_" + name, new TestEnvironmentDefinition.AllOf(new Sky(Sky.NOON, Weather.Type.CLEAR), new AtDifficulty(difficulty)))
+                    .test("moments_struck_by_the_dark_costs_ten_on_" + name, 1, helper -> expectAtOnce(helper, Strike::raise, -10));
+        }
     }
 
     /** Hungry, so every food can be eaten, and eating it to the end. */

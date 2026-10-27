@@ -33,6 +33,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.PlayerChunkSender;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
@@ -138,7 +139,7 @@ final class ShadowTests {
         tests.test("discovery_killing_a_real_shadow_creature_discovers_the_kill", 1, ShadowTests::discoverKill);
         tests.test("shadow_carried_umbra_drains_nothing_however_much", EVALUATED + 1, ShadowTests::carriedUmbra);
 
-        var peaceful = defaults.under("shadow_peaceful", new TestEnvironmentDefinition.AllOf(new Sky(Sky.NOON, Weather.Type.CLEAR), new Peaceful()))
+        var peaceful = defaults.under("shadow_peaceful", new TestEnvironmentDefinition.AllOf(new Sky(Sky.NOON, Weather.Type.CLEAR), new AtDifficulty(Difficulty.PEACEFUL)))
                 .padded(PADDING);
         for (var kind : KINDS) {
             String name = kind.name();

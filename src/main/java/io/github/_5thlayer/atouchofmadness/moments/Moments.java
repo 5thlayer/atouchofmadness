@@ -4,6 +4,7 @@
 package io.github._5thlayer.atouchofmadness.moments;
 
 import com.mojang.serialization.Codec;
+import io.github._5thlayer.atouchof.signal.Strike;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
@@ -32,9 +33,11 @@ import net.neoforged.neoforge.registries.datamaps.RegisterDataMapTypesEvent;
  * The instantaneous drains and restores, each one event and one move of Sanity: eating an item moves
  * it by the item's Sanity Modifier, and each slice of a placed cake by the cake item's; waking as the
  * night skips restores {@link MomentRules#sleep()}; and breaking a block in {@code #minecraft:flowers}
- * restores {@link MomentRules#flower()}. A cake slice and a broken flower are read from the stats
- * vanilla awards once each has happened, so a break that a protected area or adventure mode refuses
- * counts for nothing, and neither does one in creative, which awards no stat.
+ * restores {@link MomentRules#flower()}; and each Strike the Runtime's signal reports takes
+ * {@link MomentRules#struckByTheDark()} on every difficulty, even on Peaceful, where the Strike deals no
+ * damage. A cake slice and a broken flower are read from the stats vanilla awards once each has
+ * happened, so a break that a protected area or adventure mode refuses counts for nothing, and neither
+ * does one in creative, which awards no stat.
  */
 public final class Moments {
 
@@ -58,6 +61,7 @@ public final class Moments {
         modBus.addListener(ModConfigEvent.Reloading.class, Moments::configChanged);
         NeoForge.EVENT_BUS.addListener(LivingEntityUseItemEvent.Finish.class, Moments::ate);
         NeoForge.EVENT_BUS.addListener(PlayerWakeUpEvent.class, Moments::wokeUp);
+        NeoForge.EVENT_BUS.addListener(Strike.class, Moments::struck);
         // A listener that cancels the stat cancels only the count, not the slice eaten or the flower broken.
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, true, StatAwardEvent.class, Moments::awarded);
     }
@@ -73,6 +77,11 @@ public final class Moments {
         if (event.getEntity() instanceof ServerPlayer player && !event.wakeImmediately() && !event.updateLevel()) {
             PlayerSanity.add(player, rules.sleep(), Cause.SLEEP);
         }
+    }
+
+    /** The signal carries no cost of its own: what a Strike takes is this Pillar's (suite ADR-0004). */
+    private static void struck(Strike strike) {
+        PlayerSanity.add(strike.player(), -rules.struckByTheDark(), Cause.STRUCK_BY_THE_DARK);
     }
 
     /** A stat is awarded with its new total, and reset with 0; only a rise is a slice eaten or a block broken. */

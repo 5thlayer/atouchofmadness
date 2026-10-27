@@ -30,6 +30,8 @@ public enum Cause {
     SHADOW_STRIKE,
     /** A player's kill of a Real Shadow Creature, one cause for both kinds. */
     SHADOW_KILL,
+    /** A Strike by the Dark, which the Runtime's Strike signal reports; A Touch of Darkness raises it. */
+    STRUCK_BY_THE_DARK,
     /** Any piece of Umbra Gear in use, one cause for all of them. */
     UMBRA_GEAR;
 

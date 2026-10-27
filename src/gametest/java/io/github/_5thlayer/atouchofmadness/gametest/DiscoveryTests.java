@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import com.mojang.authlib.GameProfile;
+import io.github._5thlayer.atouchof.signal.Strike;
 import io.github._5thlayer.atouchofmadness.crown.FlowerCrown;
 import io.github._5thlayer.atouchofmadness.discovery.Discoverables;
 import io.github._5thlayer.atouchofmadness.discovery.Discovery;
@@ -77,6 +78,7 @@ final class DiscoveryTests {
         tests.test("discovery_each_child_is_hidden_toasts_and_keeps_out_of_chat", 1, DiscoveryTests::display);
         tests.test("discovery_each_cause_grants_its_advancement_when_it_moves_sanity", 1, DiscoveryTests::eachCause);
         tests.test("discovery_a_moment_that_moves_nothing_discovers_nothing", 1, DiscoveryTests::momentAtFull);
+        tests.test("discovery_the_first_strike_that_moves_sanity_discovers_struck_by_the_dark", 1, DiscoveryTests::struck);
         tests.test("discovery_eating_a_golden_apple_discovers_food", 100, DiscoveryTests::eating);
         tests.test("discovery_low_light_is_discovered_by_each_player_it_moves_and_not_at_empty", EVALUATED + 1, DiscoveryTests::lowLight);
         tests.test("discovery_a_restore_at_full_discovers_nothing_while_a_drain_moves_sanity", PlayerSanity.EVALUATION_TICKS + 1, DiscoveryTests::restoreAtFull);
@@ -159,6 +161,24 @@ final class DiscoveryTests {
         PlayerSanity.add(player, 10, Cause.FOOD);
         if (Discovery.isKnown(player, Cause.FOOD)) {
             helper.fail("a food that restored nothing at full Sanity discovered food");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * The Runtime's Strike signal, raised at 0 Sanity, moves nothing and discovers nothing; raised at 50,
+     * it discovers the Strike.
+     */
+    private static void struck(GameTestHelper helper) {
+        var player = join(helper, MIDDLE, 0);
+        Strike.raise(player);
+        if (Discovery.isKnown(player, Cause.STRUCK_BY_THE_DARK)) {
+            helper.fail("a Strike at 0 Sanity, which moved nothing, discovered struck_by_the_dark");
+        }
+        PlayerSanity.set(player, new Sanity(50));
+        Strike.raise(player);
+        if (!done(player, advancement(helper, Discovery.advancementId(Cause.STRUCK_BY_THE_DARK.id())))) {
+            helper.fail("a Strike that moved Sanity did not discover struck_by_the_dark");
         }
         helper.succeed();
     }
