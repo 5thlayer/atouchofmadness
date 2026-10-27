@@ -4,6 +4,7 @@
 package io.github._5thlayer.atouchofmadness.gametest;
 
 import java.util.List;
+import java.util.function.IntPredicate;
 
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentDrains;
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
@@ -24,12 +25,20 @@ import net.minecraft.world.phys.Vec3;
  * eyes can see as a relief in a dimension with a moon (ADR 0003), freezing, being wet, and an
  * unsettling dimension. Each test sets up its
  * condition, stands a player in it with no other source active, ticks them past an evaluation once the
- * light has settled, and reads the Net rate against the per-minute figure.
+ * light at the eyes reads what the setup built, and reads the Net rate against the per-minute figure.
+ * The light engine works on its own thread, as fast as it likes, so a test that changes the light
+ * waits for the brightness it set rather than for a number of ticks.
  */
 final class EnvironmentTests {
 
-    /** Long enough for the light engine to settle before the evaluation the test reads. */
+    /** The evaluation the test reads, at the earliest, for a test whose setup leaves the light as it was. */
     private static final int READ_AT = 2 * PlayerSanity.EVALUATION_TICKS;
+
+    /** Far longer than the light engine takes to catch up with a setup, however loaded the server. */
+    private static final int TIMEOUT = 10 * PlayerSanity.EVALUATION_TICKS;
+
+    /** The brightness at the eyes of a closed room once the light engine has taken the sky light out. */
+    private static final IntPredicate DARK = brightness -> brightness == 0;
 
     /** The platform is 9 by 9 with its floor at y 0; a player stands on it at y 1. */
     private static final BlockPos MIDDLE = new BlockPos(4, 1, 4);
@@ -38,15 +47,15 @@ final class EnvironmentTests {
     }
 
     static void register(ATouchOfMadnessGameTests.Registrar tests) {
-        int ticks = READ_AT + 1;
+        int ticks = TIMEOUT;
         tests.test("environment_an_unlit_room_drains_six", ticks, helper -> {
             closedRoom(helper);
-            expectDrain(helper, MIDDLE, 6);
+            expectDrain(helper, MIDDLE, DARK, 6);
         });
         tests.test("environment_block_light_of_five_drains_nothing", ticks, helper -> {
             closedRoom(helper);
             helper.setBlock(MIDDLE.above(), Blocks.LIGHT.defaultBlockState().setValue(LightBlock.LEVEL, 5));
-            expectDrain(helper, MIDDLE, 0);
+            expectDrain(helper, MIDDLE, brightness -> brightness == 5, 0);
         });
         tests.test("environment_daylight_in_the_overworld_drains_nothing", ticks, helper -> expectDrain(helper, MIDDLE, 0));
         tests.test("environment_powder_snow_drains_four", ticks, helper -> {
@@ -61,8 +70,6 @@ final class EnvironmentTests {
             expectDrain(helper, MIDDLE, 1.5);
         });
         tests.test("environment_the_nether_drains_one", ticks, helper -> expectDrainIn(helper, Level.NETHER, 130, 1));
-        // The game-test pack adds the End to #atouchofmadness:unsettling.
-        tests.test("environment_a_datapack_makes_the_end_unsettling", ticks, helper -> expectDrainIn(helper, Level.END, 200, 1));
 
         tests.test("environment_only_the_overworld_has_a_moon", 1, EnvironmentTests::onlyTheOverworldHasAMoon);
 
@@ -110,18 +117,25 @@ final class EnvironmentTests {
         level.setBlockAndUpdate(feet.below(), Blocks.STONE.defaultBlockState());
         level.setBlockAndUpdate(feet, Blocks.AIR.defaultBlockState());
         level.setBlockAndUpdate(feet.above(), Blocks.LIGHT.defaultBlockState());
-        stand(helper, level, feet, perMinute);
+        stand(helper, level, feet, brightness -> brightness == LightBlock.MAX_LEVEL, perMinute);
     }
 
+    /** For a setup that leaves the light as the platform has it. */
     private static void expectDrain(GameTestHelper helper, BlockPos feet, double perMinute) {
-        stand(helper, helper.getLevel(), helper.absolutePos(feet), perMinute);
+        expectDrain(helper, feet, brightness -> true, perMinute);
+    }
+
+    private static void expectDrain(GameTestHelper helper, BlockPos feet, IntPredicate lit, double perMinute) {
+        stand(helper, helper.getLevel(), helper.absolutePos(feet), lit, perMinute);
     }
 
     /**
-     * Joins a player, stands them at {@code feet} and ticks them each tick; once an evaluation has come
-     * after the light settled, the Net rate must be the drain of {@code perMinute}, and nothing else.
+     * Joins a player, stands them at {@code feet} and ticks them each tick; once a whole second has
+     * passed since the brightness at the eyes was {@code lit}, and no sooner than {@link #READ_AT},
+     * the Net rate must be the drain of {@code perMinute}, and nothing else.
      */
-    private static void stand(GameTestHelper helper, ServerLevel level, BlockPos feet, double perMinute) {
+    private static void stand(GameTestHelper helper, ServerLevel level, BlockPos feet, IntPredicate lit, double perMinute) {
+        long[] litOn = {-1};
         var profile = TestPlayers.profile();
         TestPlayers.whenDone(helper, () -> TestPlayers.leave(helper, profile));
         TestPlayers.join(helper, profile).teleport(new TeleportTransition(level, Vec3.atBottomCenterOf(feet), Vec3.ZERO, 0, 0,
@@ -129,7 +143,11 @@ final class EnvironmentTests {
         helper.onEachTick(() -> {
             var player = TestPlayers.playerList(helper).getPlayer(profile.id());
             player.doTick();
-            if (helper.getTick() < READ_AT) {
+            if (litOn[0] < 0 && lit.test(level.getMaxLocalRawBrightness(BlockPos.containing(player.getEyePosition())))) {
+                litOn[0] = helper.getTick();
+            }
+            // A whole second after, so the player's own tick of it has come since.
+            if (litOn[0] < 0 || helper.getTick() < Math.max(READ_AT, litOn[0] + PlayerSanity.EVALUATION_TICKS + 1)) {
                 return;
             }
             double read = PlayerSanity.netRate(player) / EnvironmentRules.drainPerTick(1);

@@ -41,6 +41,9 @@ final class ShapeTests {
     /** How many times a creature takes a Shape from a biome, each of which must be one the biome offers. */
     private static final int TAKES = 20;
 
+    /** How many seeds a test tries for a pick it needs to differ from the fallback. */
+    private static final int SEEDS = 100;
+
     private ShapeTests() {
     }
 
@@ -124,13 +127,21 @@ final class ShapeTests {
         helper.succeed();
     }
 
-    /** A creature that took a Shape has the same health, damage, speed and size as one of its kind that took none. */
+    /**
+     * A creature that took a Shape has the same health, damage, speed and size as one of its kind that took none.
+     * A desert offers the fallback among its Shapes, so the pick is seeded, by the first of {@link #SEEDS} that
+     * draws another Shape: the same seed, and so the same Shape, every run.
+     */
     private static void noStat(GameTestHelper helper, Kind kind) {
         var plain = creature(helper, kind);
         var shaped = creature(helper, kind);
-        shaped.takeShape(biome(helper, Biomes.DESERT));
+        var desert = biome(helper, Biomes.DESERT);
+        for (int seed = 0; seed < SEEDS && shaped.shape() == plain.shape(); seed++) {
+            shaped.getRandom().setSeed(seed);
+            shaped.takeShape(desert);
+        }
         if (shaped.shape() == plain.shape()) {
-            helper.fail("a " + kind.name() + " in a desert kept its fallback Shape, so this test compares nothing");
+            helper.fail("a " + kind.name() + " in a desert kept its fallback Shape for every seed, so this test compares nothing");
         }
         for (var attribute : List.of(Attributes.MAX_HEALTH, Attributes.ATTACK_DAMAGE, Attributes.MOVEMENT_SPEED, Attributes.FOLLOW_RANGE)) {
             if (shaped.getAttributeValue(attribute) != plain.getAttributeValue(attribute)) {
