@@ -88,7 +88,7 @@ public final class HallucinationEffects {
         boolean colourLossOn = MadnessClientConfig.colourLoss();
         colourLoss = ease(colourLoss, colourLossOn ? HallucinationRules.colourLoss(sanity, stage) : 0);
         colourLossReach = ease(colourLossReach, colourLossOn ? HallucinationRules.colourLossReach(sanity, stage) : 0);
-        encroachment = ease(encroachment, MadnessClientConfig.shapes() ? HallucinationRules.encroachment(sanity, stage) : 0);
+        encroachment = ease(encroachment, MadnessClientConfig.encroachment() ? HallucinationRules.encroachment(sanity, stage) : 0);
         sway = ease(sway, MadnessClientConfig.sway() ? HallucinationRules.sway(stage) : 0);
         var random = player.getRandom();
         if (random.nextDouble() < HallucinationRules.fakeSoundChance(sanity, stage)) {

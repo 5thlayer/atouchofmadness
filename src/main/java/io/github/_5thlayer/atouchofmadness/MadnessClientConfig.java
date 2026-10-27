@@ -22,9 +22,9 @@ public final class MadnessClientConfig {
             .comment("Whether the screen's edge loses its colour from Uneasy down, more deeply as Sanity falls, and reaches in toward the middle while Insane.")
             .define("colourLoss", true);
 
-    private static final ModConfigSpec.BooleanValue SHAPES = BUILDER
+    private static final ModConfigSpec.BooleanValue ENCROACHMENT = BUILDER
             .comment("Whether dark shapes creep in from the screen's edges from Uneasy down, nearer as Sanity falls. Vanilla's Distortion Effects slider scales how much they move.")
-            .define("shapes", true);
+            .define("encroachment", true);
 
     static {
         BUILDER.pop();
@@ -46,7 +46,7 @@ public final class MadnessClientConfig {
     }
 
     /** On until the config loads. */
-    public static boolean shapes() {
-        return !SPEC.isLoaded() || SHAPES.get();
+    public static boolean encroachment() {
+        return !SPEC.isLoaded() || ENCROACHMENT.get();
     }
 }
