@@ -80,6 +80,7 @@ public final class ATouchOfMadnessGameTests {
         CrownTests.register(tests);
         DiscoveryTests.register(tests);
         ShadowTests.register(tests);
+        ShapeTests.register(tests);
     }
 
     private static Identifier id(String path) {

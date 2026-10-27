@@ -3,6 +3,7 @@
 
 package io.github._5thlayer.atouchofmadness.shadow;
 
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 
@@ -14,5 +15,16 @@ public final class Gaunt extends ShadowCreature {
 
     public Gaunt(EntityType<? extends Gaunt> type, Level level) {
         super(type, level, ShadowRules::gaunt);
+    }
+
+    @Override
+    protected TagKey<EntityType<?>> shapes() {
+        return Shapes.GAUNT_SHAPES;
+    }
+
+    /** A phantom, where its biome spawns none of its Shapes. */
+    @Override
+    protected EntityType<?> fallbackShape() {
+        return EntityType.PHANTOM;
     }
 }

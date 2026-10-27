@@ -10,12 +10,14 @@ import java.util.function.Function;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Stage;
+import net.minecraft.core.Holder;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
@@ -27,6 +29,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.MoveControl;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
@@ -40,7 +43,8 @@ import org.jspecify.annotations.Nullable;
  * can be killed, and each of its hits takes the strike from their Sanity, while a player's kill of it
  * restores theirs. It is never saved, and vanishes as soon as its Owner is gone, dead, in another
  * dimension, asleep or out of Survival and Adventure; the spawner removes it when the Owner's cap drops
- * below their count. It never stops its Owner sleeping, being no {@code Monster}.
+ * below their count. It never stops its Owner sleeping, being no {@code Monster}. It is drawn as its
+ * Shape, which it takes as it appears and which changes nothing but its look.
  */
 public abstract class ShadowCreature extends PathfinderMob {
 
@@ -61,6 +65,7 @@ public abstract class ShadowCreature extends PathfinderMob {
 
     private static final EntityDataAccessor<Boolean> DATA_REAL = SynchedEntityData.defineId(ShadowCreature.class, EntityDataSerializers.BOOLEAN);
     private static final EntityDataAccessor<Boolean> DATA_FADING = SynchedEntityData.defineId(ShadowCreature.class, EntityDataSerializers.BOOLEAN);
+    private static final EntityDataAccessor<EntityType<?>> DATA_SHAPE = SynchedEntityData.defineId(ShadowCreature.class, Shapes.SERIALIZER);
 
     private @Nullable UUID owner;
     private int fadeTicks;
@@ -86,6 +91,23 @@ public abstract class ShadowCreature extends PathfinderMob {
         super.defineSynchedData(entityData);
         entityData.define(DATA_REAL, false);
         entityData.define(DATA_FADING, false);
+        entityData.define(DATA_SHAPE, fallbackShape());
+    }
+
+    /** The tag its kind's Shapes come from. */
+    protected abstract TagKey<EntityType<?>> shapes();
+
+    /** The Shape its kind takes where its biome spawns none of its tag; called as it is made, so a constant. */
+    protected abstract EntityType<?> fallbackShape();
+
+    /** The mob it is drawn as. */
+    public EntityType<?> shape() {
+        return entityData.get(DATA_SHAPE);
+    }
+
+    /** Takes a Shape from the monsters of the biome it appears in, before it is added to the level. */
+    public void takeShape(Holder<Biome> biome) {
+        entityData.set(DATA_SHAPE, Shapes.in(biome, shapes()).getRandom(getRandom()).orElseGet(this::fallbackShape));
     }
 
     @Override

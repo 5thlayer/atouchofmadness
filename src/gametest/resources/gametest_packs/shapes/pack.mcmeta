@@ -1,0 +1,13 @@
+{
+  "pack": {
+    "description": "A Touch of Madness game tests: the shapes pack, which gives the Lurker the spider alone and the Gaunt no Shape",
+    "min_format": [
+      101,
+      1
+    ],
+    "max_format": [
+      101,
+      1
+    ]
+  }
+}

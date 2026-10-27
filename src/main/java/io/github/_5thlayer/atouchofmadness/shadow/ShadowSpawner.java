@@ -28,7 +28,8 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
  * and the Lurkers and Gaunts share it. Every spawn interval, on a tick of the player's own, an attempt
  * is made while they are under it; once a second, the farthest of their creatures beyond it are
  * removed. A creature appears between the nearest and the farthest spawn distance, on a block it can
- * stand on, out of the player's sight if any such place is found; light doesn't matter. The attempts
+ * stand on, out of the player's sight if any such place is found; light doesn't matter. It takes its
+ * Shape from the biome of that place. The attempts
  * every interval stop while {@code doMobSpawning} is off, as other mobs' do.
  */
 public final class ShadowSpawner {
@@ -87,6 +88,7 @@ public final class ShadowSpawner {
             ShadowCreature creature = type.create(player.level(), EntitySpawnReason.EVENT);
             creature.setOwner(player);
             creature.snapTo(at.x, at.y, at.z, random.nextFloat() * 360, 0);
+            creature.takeShape(player.level().getBiome(creature.blockPosition()));
             player.level().addFreshEntity(creature);
             return creature;
         });

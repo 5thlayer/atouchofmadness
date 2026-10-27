@@ -20,6 +20,7 @@ import io.github._5thlayer.atouchofmadness.shadow.ShadowCreature;
 import io.github._5thlayer.atouchofmadness.shadow.ShadowCreatures;
 import io.github._5thlayer.atouchofmadness.shadow.ShadowRules;
 import io.github._5thlayer.atouchofmadness.shadow.ShadowSpawner;
+import io.github._5thlayer.atouchofmadness.shadow.Shapes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -27,6 +28,7 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition.Weather;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
@@ -68,17 +70,20 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
  */
 final class ShadowTests {
 
-    /** A creature of each kind, its weight nearby, the Umbra it drops and the Sanity its kill restores. */
+    /**
+     * A creature of each kind, its weight nearby, the Umbra it drops, the Sanity its kill restores, the
+     * tag its Shapes come from and its fallback Shape.
+     */
     record Kind(String name, Supplier<? extends EntityType<? extends ShadowCreature>> type, double weight, int minUmbra, int maxUmbra,
-            double kill) {
+            double kill, TagKey<EntityType<?>> shapes, EntityType<?> fallback) {
     }
 
-    static final Kind LURKER = new Kind("lurker", ShadowCreatures.LURKER, 2, 1, 2, 10);
-    static final Kind GAUNT = new Kind("gaunt", ShadowCreatures.GAUNT, 4, 2, 4, 20);
+    static final Kind LURKER = new Kind("lurker", ShadowCreatures.LURKER, 2, 1, 2, 10, Shapes.LURKER_SHAPES, EntityType.ZOMBIE);
+    static final Kind GAUNT = new Kind("gaunt", ShadowCreatures.GAUNT, 4, 2, 4, 20, Shapes.GAUNT_SHAPES, EntityType.PHANTOM);
     private static final List<Kind> KINDS = List.of(LURKER, GAUNT);
 
     /** The platform is 9 by 9 with its floor at y 0; a player stands on it at y 1. */
-    private static final BlockPos MIDDLE = new BlockPos(4, 1, 4);
+    static final BlockPos MIDDLE = new BlockPos(4, 1, 4);
 
     /** Two evaluations, so one has come whichever tick of a second is the player's own. */
     private static final int EVALUATED = 2 * PlayerSanity.EVALUATION_TICKS;
@@ -90,10 +95,10 @@ final class ShadowTests {
     private static final int PADDING = 9;
 
     /** Wider than the farthest spawn distance, so no creature appears in another test. */
-    private static final int SPAWN_PADDING = 25;
+    static final int SPAWN_PADDING = 25;
 
     /** Uneasy, Insane, and Insane below the Gaunts' threshold. */
-    private static final double UNEASY = 40;
+    static final double UNEASY = 40;
     private static final double INSANE = 15;
     private static final double GAUNTS = 5;
 
@@ -266,7 +271,7 @@ final class ShadowTests {
      * however the test ends: the tests stand high over the game-test world's ground. It stops short of the
      * test's barrier walls.
      */
-    private static void ground(GameTestHelper helper) {
+    static void ground(GameTestHelper helper) {
         int reach = (int) ShadowRules.DEFAULT.maxDistance();
         List<BlockPos> floor = new ArrayList<>();
         for (int x = -reach; x <= 8 + reach; x++) {
@@ -280,7 +285,7 @@ final class ShadowTests {
         TestPlayers.whenDone(helper, () -> floor.forEach(pos -> helper.setBlock(pos, Blocks.AIR)));
     }
 
-    private static void attempts(ServerPlayer player, int times) {
+    static void attempts(ServerPlayer player, int times) {
         for (int i = 0; i < times; i++) {
             ShadowSpawner.attempt(player);
         }
@@ -860,7 +865,7 @@ final class ShadowTests {
     // The fixture.
 
     /** Joins a player at {@code feet} in this game mode, logged out however the test ends, with this Sanity. */
-    private static ServerPlayer join(GameTestHelper helper, BlockPos feet, double sanity, GameType mode) {
+    static ServerPlayer join(GameTestHelper helper, BlockPos feet, double sanity, GameType mode) {
         GameProfile profile = TestPlayers.profile();
         TestPlayers.whenDone(helper, () -> TestPlayers.leave(helper, profile));
         var player = TestPlayers.join(helper, profile);
@@ -873,7 +878,7 @@ final class ShadowTests {
     }
 
     /** A creature of the kind for this Owner, standing at {@code at}. */
-    private static ShadowCreature place(GameTestHelper helper, Kind kind, ServerPlayer owner, BlockPos at) {
+    static ShadowCreature place(GameTestHelper helper, Kind kind, ServerPlayer owner, BlockPos at) {
         ShadowCreature creature = kind.type().get().create(helper.getLevel(), EntitySpawnReason.EVENT);
         creature.setOwner(owner);
         creature.snapTo(Vec3.atBottomCenterOf(helper.absolutePos(at)));

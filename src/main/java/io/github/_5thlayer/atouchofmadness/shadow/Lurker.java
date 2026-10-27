@@ -3,6 +3,7 @@
 
 package io.github._5thlayer.atouchofmadness.shadow;
 
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 
@@ -11,5 +12,16 @@ public final class Lurker extends ShadowCreature {
 
     public Lurker(EntityType<? extends Lurker> type, Level level) {
         super(type, level, ShadowRules::lurker);
+    }
+
+    @Override
+    protected TagKey<EntityType<?>> shapes() {
+        return Shapes.LURKER_SHAPES;
+    }
+
+    /** A zombie, where its biome spawns none of its Shapes. */
+    @Override
+    protected EntityType<?> fallbackShape() {
+        return EntityType.ZOMBIE;
     }
 }

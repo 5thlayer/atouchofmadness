@@ -14,6 +14,10 @@ description = '''
 ${mod_description}
 '''
 
+# Read only by the client, to draw a Shadow Creature's Shape as a shadow (#11).
+[[accessTransformers]]
+file = "META-INF/accesstransformer.cfg"
+
 [[dependencies.${mod_id}]]
 modId = "neoforge"
 type = "required"
