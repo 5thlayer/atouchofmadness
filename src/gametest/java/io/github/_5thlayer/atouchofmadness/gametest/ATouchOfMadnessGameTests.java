@@ -78,6 +78,7 @@ public final class ATouchOfMadnessGameTests {
         MusicTests.register(tests);
         FreshnessTests.register(tests);
         CrownTests.register(tests);
+        UmbraGearTests.register(tests);
         DiscoveryTests.register(tests);
         ShadowTests.register(tests);
         ShapeTests.register(tests);
