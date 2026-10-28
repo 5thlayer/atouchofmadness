@@ -49,8 +49,9 @@ def field(W, H, px, seed, clear):
              if y > 0.5 or not clear[0] <= x <= clear[1]]
     rng.shuffle(slots)
     for (fx, fy), name in zip(slots, ITEMS * 2):
-        cx, cy = int(fx * W + rng.uniform(-0.04, 0.04) * W), int(fy * H)
-        s = sprite(f'item/{name}', px).rotate(rng.uniform(-18, 18), Image.NEAREST)
+        # upright and on the slot's own column and row, so the items line up across and down
+        cx, cy = int(fx * W), int(fy * H)
+        s = sprite(f'item/{name}', px)
         img.alpha_composite(s, (cx - s.width // 2, cy - s.height // 2))
     img.alpha_composite(encroach(W, H))
     return img
