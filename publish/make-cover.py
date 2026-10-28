@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 5thlayer
 # SPDX-License-Identifier: MIT
 
-# Temporary cover and icon, the Sanity meter reading Uneasy above the title among the
+# Temporary cover and icon, the Sanity meter reading Insane above the title among the
 # Pillar's items, with the Encroachment creeping in from the edges, in the -works suite's style
 # (A Touch of Darkness' make-cover.py), until an in-game screenshot or an artist's art replaces them.
 # They carry Malcolm Riley's art through the Umbra Gear (NOTICE). Run from the repo root with Pillow
@@ -15,12 +15,14 @@ from PIL import Image, ImageDraw, ImageFont
 A = 'src/main/resources/assets/atouchofmadness/textures/'
 BG = (10, 8, 12)
 ACCENT = (196, 86, 255)  # violet, the suite's, as A Touch of Darkness' and Wickedness' covers
-ITEMS = ['flower_crown', 'umbra', 'umbra_sword', 'umbra_pickaxe', 'umbra_helmet', 'umbra_chestplate',
-         'umbra_leggings', 'umbra_boots']
-# the meter as the HUD draws it, its ten eyes all in one Stage's icons: Uneasy at 35 of 100 Sanity
+# the tools in the top corners, either side of the meter, and below the title the Umbra armour head
+# to foot between the Flower Crown and the Umbra
+TOP = ['umbra_pickaxe', 'umbra_sword']
+BOTTOM = ['flower_crown', 'umbra_helmet', 'umbra_chestplate', 'umbra_leggings', 'umbra_boots', 'umbra']
+# the meter as the HUD draws it, its ten eyes all in one Stage's icons: Insane at 15 of 100 Sanity
 EYES = 10
-STAGE = '_uneasy'
-SANITY = 35
+STAGE = '_insane'
+SANITY = 15
 
 
 def sprite(path, px):
@@ -35,9 +37,9 @@ def encroach(W, H):
     return shade
 
 
-def field(W, H, px, seed, clear):
-    # the night, with the Pillar's items scattered through it, kept clear of the title band and, above
-    # it, of the meter between the fractions of the width in clear
+def field(W, H, px, seed, top):
+    # the night, with the Pillar's items set through it clear of the title band, the tools at the
+    # height top, a fraction of H
     rng = random.Random(seed)
     img = Image.new('RGBA', (W, H), BG + (255,))
     d = ImageDraw.Draw(img)
@@ -45,12 +47,11 @@ def field(W, H, px, seed, clear):
         v = rng.randrange(10, 22)
         x, y = rng.randrange(W), rng.randrange(H)
         d.point((x, y), fill=(v + 2, v, v + 3))
-    slots = [(x, y) for y in (0.18, 0.82) for x in (0.12, 0.31, 0.5, 0.69, 0.88)
-             if y > 0.5 or not clear[0] <= x <= clear[1]]
-    rng.shuffle(slots)
-    for (fx, fy), name in zip(slots, ITEMS * 2):
-        # upright and on the slot's own column and row, so the items line up across and down, each
-        # centred by its drawn pixels rather than its tile, since each sprite sits differently in it
+    slots = [((0.12, top), TOP[0]), ((0.88, top), TOP[1])]
+    slots += [((0.1 + i * 0.16, 0.82), name) for i, name in enumerate(BOTTOM)]
+    for (fx, fy), name in slots:
+        # upright and on the slot's own column and row, so the items line up across, each centred by
+        # its drawn pixels rather than its tile, since each sprite sits differently in it
         cx, cy = int(fx * W), int(fy * H)
         s = sprite(f'item/{name}', px)
         s = s.crop(s.getchannel('A').getbbox())
@@ -82,7 +83,7 @@ def font(names, size):
 
 def make(W, H, out, title_size, px, eye, stacked=False):
     # stacked puts "A touch of" above the word, for the square icon
-    img = field(W, H, px, 11, (0.1, 0.9) if stacked else (0.25, 0.75))
+    img = field(W, H, px, 11, 0.1 if stacked else 0.18)
     f1 = font(['/System/Library/Fonts/Supplemental/Impact.ttf', '/usr/share/fonts/TTF/impact.ttf',
                os.path.expanduser('~/.local/share/fonts/msfonts/impact.ttf'),
                '/usr/share/fonts/noto/NotoSans-Black.ttf'], title_size)
