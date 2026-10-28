@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 5thlayer
 # SPDX-License-Identifier: MIT
 
-# Temporary cover and icon, the Sanity meter reading Insane above the title among the
+# Temporary cover and icon, the Sanity meter slipping from Sane to Insane above the title among the
 # Pillar's items, with the Encroachment creeping in from the edges, in the -works suite's style
 # (A Touch of Darkness' make-cover.py), until an in-game screenshot or an artist's art replaces them.
 # They carry Malcolm Riley's art through the Umbra Gear (NOTICE). Run from the repo root with Pillow
@@ -10,19 +10,20 @@ import math
 import os
 import random
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 A = 'src/main/resources/assets/atouchofmadness/textures/'
 BG = (10, 8, 12)
 ACCENT = (196, 86, 255)  # violet, the suite's, as A Touch of Darkness' and Wickedness' covers
-# the tools in the top corners, either side of the meter, and below the title the Umbra armour head
-# to foot between the Flower Crown and the Umbra
+# the tools in the top corners, either side of the meter, and below the title the Umbra armour
+# grouped head to foot in the middle, between the Flower Crown and the Umbra
 TOP = ['umbra_pickaxe', 'umbra_sword']
-BOTTOM = ['flower_crown', 'umbra_helmet', 'umbra_chestplate', 'umbra_leggings', 'umbra_boots', 'umbra']
-# the meter as the HUD draws it, its ten eyes all in one Stage's icons: Insane at 15 of 100 Sanity
-EYES = 10
-STAGE = '_insane'
-SANITY = 15
+ARMOUR = ['umbra_helmet', 'umbra_chestplate', 'umbra_leggings', 'umbra_boots']
+GLOW = (200, 170, 255)
+# the meter's ten places, left to right, filled from the left as Sanity slips through the Stages:
+# Sane, then Uneasy, then Insane down to a half eye, and an empty eye at the end; each place's
+# Stage, and how full it is
+EYES = [('', 2)] * 3 + [('_uneasy', 2)] * 3 + [('_insane', 2)] * 2 + [('_insane', 1), ('_insane', 0)]
 
 
 def sprite(path, px):
@@ -47,31 +48,43 @@ def field(W, H, px, seed, top):
         v = rng.randrange(10, 22)
         x, y = rng.randrange(W), rng.randrange(H)
         d.point((x, y), fill=(v + 2, v, v + 3))
-    slots = [((0.12, top), TOP[0]), ((0.88, top), TOP[1])]
-    slots += [((0.1 + i * 0.16, 0.82), name) for i, name in enumerate(BOTTOM)]
-    for (fx, fy), name in slots:
+    img.alpha_composite(encroach(W, H))
+    # the items over the Encroachment, so it doesn't sink them
+    slots = [(0.12, top, TOP[0]), (0.88, top, TOP[1]), (0.12, 0.82, 'flower_crown'), (0.88, 0.82, 'umbra')]
+    slots += [(0.5 + (i - 1.5) * px * 1.35 / W, 0.82, name) for i, name in enumerate(ARMOUR)]
+    for fx, fy, name in slots:
         # upright and on the slot's own column and row, so the items line up across, each centred by
         # its drawn pixels rather than its tile, since each sprite sits differently in it
-        cx, cy = int(fx * W), int(fy * H)
         s = sprite(f'item/{name}', px)
         s = s.crop(s.getchannel('A').getbbox())
-        img.alpha_composite(s, (cx - s.width // 2, cy - s.height // 2))
-    img.alpha_composite(encroach(W, H))
+        item(img, ImageEnhance.Brightness(s).enhance(1.4), int(fx * W), int(fy * H), px)
     return img
 
 
+def item(img, s, cx, cy, px):
+    # an item lifted off the night by a very soft glow of its own shape
+    r = px // 5
+    halo = Image.new('RGBA', (s.width + 4 * r, s.height + 4 * r), GLOW + (0,))
+    a = Image.new('L', halo.size, 0)
+    a.paste(s.getchannel('A').point(lambda v: int(v * 0.35)), (2 * r, 2 * r))
+    halo.putalpha(a.filter(ImageFilter.GaussianBlur(r)))
+    img.alpha_composite(halo, (cx - halo.width // 2, cy - halo.height // 2))
+    img.alpha_composite(s, (cx - s.width // 2, cy - s.height // 2))
+
+
 def meter(img, cx, bottom, eye):
-    # the meter's row of eyes, each eye px wide with a pixel's gap, standing on the band's top edge; as
-    # the HUD, it fills from the right, each place empty first, then full or half over it
+    # the meter's row of eyes, each eye px wide with a pixel's gap, standing on the band's top edge,
+    # each place empty first, then full or half over it; the half eye turned to fill from the left as
+    # the row does, and the empty eyes lifted off the night, which they'd otherwise vanish into
     u = eye // 9
-    w = EYES * 10 * u - u
-    halves = round(SANITY / 100 * EYES * 2)
-    for place in range(EYES):
-        x = cx + w // 2 - u * 9 - place * 10 * u
-        img.alpha_composite(sprite(f'gui/sprites/hud/sanity_empty{STAGE}', 9 * u), (x, bottom - 9 * u))
-        fill = 'full' if halves >= 2 * place + 2 else 'half' if halves == 2 * place + 1 else None
+    w = len(EYES) * 10 * u - u
+    for place, (stage, fill) in enumerate(EYES):
+        at = (cx - w // 2 + place * 10 * u, bottom - 9 * u)
+        empty = sprite(f'gui/sprites/hud/sanity_empty{stage}', 9 * u)
+        img.alpha_composite(ImageEnhance.Brightness(empty).enhance(3), at)
         if fill:
-            img.alpha_composite(sprite(f'gui/sprites/hud/sanity_{fill}{STAGE}', 9 * u), (x, bottom - 9 * u))
+            s = sprite(f'gui/sprites/hud/sanity_{"full" if fill == 2 else "half"}{stage}', 9 * u)
+            img.alpha_composite(s if fill == 2 else s.transpose(Image.FLIP_LEFT_RIGHT), at)
 
 
 def font(names, size):
