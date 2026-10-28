@@ -35,7 +35,7 @@ EYES = [('', 2)] * 3 + [('_uneasy', 2)] * 3 + [('_insane', 2)] * 2 + [('_insane'
 # spider front on, their boxes drawn solid; the rest stand front on, each box's front face cut from the
 # texture, so its holes show. A part
 # is ('box', x, y, w, h), ('face', u, v, w, h, d, x, y, mirrored), the texture's w by h at (u + d, v + d),
-# or ('leg', x, y, to x, to y), a spider's leg, two units thick.
+# ('leg', x, y, to x, to y), a limb two units thick, or ('wing', points), a polygon, as a vex's wing.
 
 
 def spider_legs(yrot, zrot):
@@ -56,11 +56,19 @@ SHAPES = {
     'enderman/enderman': [('face', 56, 0, 2, 30, 2, -3, -5, False), ('face', 56, 0, 2, 30, 2, 1, -5, True),
                           ('face', 32, 16, 8, 12, 4, -4, -14, False), ('face', 56, 0, 2, 30, 2, -6, -14, False),
                           ('face', 56, 0, 2, 30, 2, 4, -14, True), ('face', 0, 0, 8, 8, 8, -4, -21, False)],
+    # the vex hovering front on, its wings swept up behind it, its arms out and its body trailing off
+    'illager/vex': [('wing', [(-0.5, 18.5), (-3, 14), (-6, 10), (-8, 9.5), (-8.5, 12), (-7.5, 15), (-5, 18), (-1, 20)]),
+                    ('wing', [(0.5, 18.5), (3, 14), (6, 10), (8, 9.5), (8.5, 12), (7.5, 15), (5, 18), (1, 20)]),
+                    ('leg', -2, 18, -4.4, 21.2), ('leg', 2, 18, 4.4, 21.2),
+                    ('wing', [(-1.5, 21), (1.5, 21), (0, 25)]),
+                    ('box', -1.5, 17.5, 3, 4), ('box', -2.5, 12.5, 5, 5)],
     'spider/spider': [*spider_legs(math.pi / 4, math.pi / 4), *spider_legs(math.pi / 8, 0.58119464),
                       ('box', -5, 11, 10, 8), ('box', -4, 11, 8, 8)],
 }
 LURKERS = ['zombie/zombie', 'skeleton/skeleton']
-GAUNTS = ['creeper/creeper', 'enderman/enderman', 'spider/spider']
+GAUNTS = ['creeper/creeper', 'enderman/enderman', 'spider/spider', 'illager/vex']
+# how far above the row a Shape floats, in model units
+HOVER = {'illager/vex': 10}
 
 
 
@@ -82,6 +90,8 @@ def shape(path, k):
             pts += [p[1:3], (p[1] + p[3], p[2] + p[4])]
         elif p[0] == 'face':
             pts += [p[6:8], (p[6] + p[3], p[7] + p[4])]
+        elif p[0] == 'wing':
+            pts += p[1]
         else:
             pts += [p[1:3], p[3:5]]
     x0, y0 = min(a for a, _ in pts) - 1, min(b for _, b in pts) - 1
@@ -94,6 +104,8 @@ def shape(path, k):
             d.rectangle([at(*p[1:3]), at(p[1] + p[3], p[2] + p[4])], fill=(0, 0, 0, 255))
         elif p[0] == 'leg':
             d.line([at(*p[1:3]), at(*p[3:5])], fill=(0, 0, 0, 255), width=2 * k)
+        elif p[0] == 'wing':
+            d.polygon([at(*q) for q in p[1]], fill=(0, 0, 0, 255))
         else:
             _, u, v, w, h, dz, x, y, mirrored = p
             face = tex.crop((u + dz, v + dz, u + dz + w, v + dz + h)).resize((w * k, h * k), Image.NEAREST)
@@ -108,7 +120,8 @@ def shape(path, k):
 def shadows(img, cx, baseline, k):
     # the creatures in a row centred over the meter, their feet just above it, the Lurker's then the
     # Gaunt's, a little apart
-    made = [shape(name, k) for name in LURKERS + GAUNTS]
+    names = LURKERS + GAUNTS
+    made = [(s, fx, fy + HOVER.get(name, 0) * k) for name, (s, fx, fy) in zip(names, (shape(n, k) for n in names))]
     gaps = [3 * k] * (len(LURKERS) - 1) + [8 * k] + [3 * k] * (len(GAUNTS) - 1)
     x = cx - (sum(m[0].width for m in made) + sum(gaps)) // 2
     for (s, fx, fy), gap in zip(made, gaps + [0]):
