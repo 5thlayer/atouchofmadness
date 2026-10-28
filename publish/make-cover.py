@@ -35,7 +35,7 @@ EYES = [('', 2)] * 3 + [('_uneasy', 2)] * 3 + [('_insane', 2)] * 2 + [('_insane'
 # spider front on, their boxes drawn solid; the rest stand front on, each box's front face cut from the
 # texture, so its holes show. A part
 # is ('box', x, y, w, h), ('face', u, v, w, h, d, x, y, mirrored), the texture's w by h at (u + d, v + d),
-# ('leg', x, y, to x, to y), a limb two units thick, or ('wing', points), a polygon, as a vex's wing.
+# ('leg', x, y, to x, to y), a limb two units thick, ('line', ...) one unit thick, or ('wing', points), a polygon, as a vex's wing.
 
 
 def spider_legs(yrot, zrot):
@@ -43,6 +43,23 @@ def spider_legs(yrot, zrot):
     # and it reaches 15 units
     out, down = 15 * math.cos(yrot) * math.cos(zrot), 15 * math.cos(yrot) * math.sin(zrot)
     return [('leg', -4, 15, -4 - out, 15 + down), ('leg', 4, 15, 4 + out, 15 + down)]
+
+
+def blaze_rods():
+    # a blaze's twelve rods front on, in their three rings as vanilla first sets them, before they turn
+    rods = []
+    for ring, (r, y, start, bob) in enumerate(((9, -2, 0, 0.5), (7, 2, math.pi / 4, 0.5), (5, 11, 0.47123894, 0.75))):
+        for i in range(4 * ring, 4 * ring + 4):
+            rods.append(('box', math.cos(start + i - 4 * ring) * r, y + math.cos(i * bob), 2, 8))
+    return rods
+
+
+def phantom_wing(side):
+    # a phantom's wing front on, raised mid flap, its base then its tip each turned up a further 16 degrees
+    up = math.radians(16)
+    x, y = (2, -2) if side > 0 else (-3, -2)
+    bx, by = x + side * 6 * math.cos(up), y - 6 * math.sin(up)
+    return [('leg', x, y + 1, bx, by + 1), ('line', bx, by + 0.5, bx + side * 13 * math.cos(2 * up), by - 13 * math.sin(2 * up) + 0.5)]
 
 
 HEAD, BODY = ('face', 0, 0, 8, 8, 8, -4, -8, False), ('face', 16, 16, 8, 12, 4, -4, 0, False)
@@ -62,13 +79,18 @@ SHAPES = {
                     ('leg', -2, 18, -4.4, 21.2), ('leg', 2, 18, 4.4, 21.2),
                     ('wing', [(-1.5, 21), (1.5, 21), (0, 25)]),
                     ('box', -1.5, 17.5, 3, 4), ('box', -2.5, 12.5, 5, 5)],
+    'blaze/blaze': [*blaze_rods(), ('box', -4, -4, 8, 8)],
+    # the phantom on the wing, front on
+    'phantom/phantom': [*phantom_wing(1), *phantom_wing(-1), ('box', -3, -2, 5, 3), ('box', -4, -1, 7, 3)],
     'spider/spider': [*spider_legs(math.pi / 4, math.pi / 4), *spider_legs(math.pi / 8, 0.58119464),
                       ('box', -5, 11, 10, 8), ('box', -4, 11, 8, 8)],
 }
 LURKERS = ['zombie/zombie', 'skeleton/skeleton']
-GAUNTS = ['creeper/creeper', 'enderman/enderman', 'spider/spider', 'illager/vex']
+GAUNTS = ['creeper/creeper', 'enderman/enderman', 'spider/spider', 'blaze/blaze', 'illager/vex']
+# the phantom flies over the row, above the two Gaunts it names
+PHANTOM = ('spider/spider', 'blaze/blaze')
 # how far above the row a Shape floats, in model units
-HOVER = {'illager/vex': 10}
+HOVER = {'illager/vex': 10, 'blaze/blaze': 4}
 
 
 
@@ -93,7 +115,7 @@ def shape(path, k):
         elif p[0] == 'wing':
             pts += p[1]
         else:
-            pts += [p[1:3], p[3:5]]
+            pts += [p[1:3], p[3:5]]  # a leg or a line
     x0, y0 = min(a for a, _ in pts) - 1, min(b for _, b in pts) - 1
     x1, y1 = max(a for a, _ in pts) + 1, max(b for _, b in pts) + 1
     img = Image.new('RGBA', (math.ceil((x1 - x0) * k), math.ceil((y1 - y0) * k)), (0, 0, 0, 0))
@@ -104,6 +126,8 @@ def shape(path, k):
             d.rectangle([at(*p[1:3]), at(p[1] + p[3], p[2] + p[4])], fill=(0, 0, 0, 255))
         elif p[0] == 'leg':
             d.line([at(*p[1:3]), at(*p[3:5])], fill=(0, 0, 0, 255), width=2 * k)
+        elif p[0] == 'line':
+            d.line([at(*p[1:3]), at(*p[3:5])], fill=(0, 0, 0, 255), width=k)
         elif p[0] == 'wing':
             d.polygon([at(*q) for q in p[1]], fill=(0, 0, 0, 255))
         else:
@@ -119,14 +143,21 @@ def shape(path, k):
 
 def shadows(img, cx, baseline, k):
     # the creatures in a row centred over the meter, their feet just above it, the Lurker's then the
-    # Gaunt's, a little apart
+    # Gaunt's, a little apart, and the phantom flying over them
     names = LURKERS + GAUNTS
     made = [(s, fx, fy + HOVER.get(name, 0) * k) for name, (s, fx, fy) in zip(names, (shape(n, k) for n in names))]
     gaps = [3 * k] * (len(LURKERS) - 1) + [8 * k] + [3 * k] * (len(GAUNTS) - 1)
     x = cx - (sum(m[0].width for m in made) + sum(gaps)) // 2
-    for (s, fx, fy), gap in zip(made, gaps + [0]):
-        item(img, s, int(x + s.width // 2), int(baseline - fy + s.height // 2), 10 * k, 0.8)
+    boxes = {}
+    for name, (s, fx, fy), gap in zip(names, made, gaps + [0]):
+        top = int(baseline - fy)
+        item(img, s, int(x + s.width // 2), top + s.height // 2, 10 * k, 0.8)
+        boxes[name] = (x, top, x + s.width)
         x += s.width + gap
+    s, _, _ = shape('phantom/phantom', k)
+    under = [boxes[n] for n in PHANTOM]
+    left, right = min(b[0] for b in under), max(b[2] for b in under)
+    item(img, s, (left + right) // 2, min(b[1] for b in under) - 2 * k - s.height // 2, 10 * k, 0.8)
 
 
 def sprite(path, px):
