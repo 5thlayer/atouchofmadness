@@ -123,7 +123,7 @@ _Avoid_: skin, disguise, variant
 ### Discovery
 
 **Discovery**:
-A player's own learning of one thing of the Pillar's, such as Low light, Company, a Stale disc or the Flower Crown, the first time it actually changes their Sanity, or for a stage the first time they reach it; until then the Pillar shows nothing of what that thing does. Never shared between players. The Sanity meter itself is never discovered: it shows from the start.
+The suite's **Discovery** (A Touch Of's glossary, suite ADR-0006), here of each Cause, such as Low light, Company, a Stale disc or the Flower Crown, the first time it actually changes the player's Sanity, and of each Stage below Sane the first time they reach it. The Sanity meter itself is never discovered: it shows from the start.
 _Avoid_: unlock, research, knowledge
 
 ### Dev runs

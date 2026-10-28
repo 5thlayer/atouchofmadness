@@ -1,8 +1,10 @@
 ---
-status: provisional
+status: superseded by suite ADR-0006
 ---
 
 # Discovery is kept in vanilla advancements, and a missing one counts as known
+
+> Superseded by A Touch Of's ADR-0006, *Discovery is kept in vanilla advancements, and the Runtime keeps the record* (5thlayer/atouchof#12), which takes this decision up for every Pillar. Madness keeps its Discoveries in the Runtime's record (#26), at the same advancement ids.
 
 A player learns how Sanity works by meeting it: until a thing has changed their Sanity, or for a stage until they reach it, the Pillar shows nothing of what it does (#18). Something has to remember, per player, what each one has met.
 

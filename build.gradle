@@ -5,8 +5,8 @@ plugins {
     id 'io.github.5thlayer.libworks.module' version '0.4.4'
 }
 
-// A Touch Of's Runtime, which draws the Sanity meter (suite ADR-0005), and which a Pillar nests.
-def atouchofRange = '[0.1.1,0.2)'
+// A Touch Of's Runtime, which draws the Sanity meter (suite ADR-0005) and keeps the Discoveries (suite ADR-0006), and which a Pillar nests.
+def atouchofRange = '[0.1.3,0.2)'
 
 // What the Module requires of other Modules, each as a range (libworks ADR 0003):
 libworks {
@@ -46,7 +46,7 @@ dependencies {
     jarJar('io.github.5thlayer:atouchof') {
         version {
             strictly atouchofRange
-            prefer '0.1.0'
+            prefer '0.1.3'
         }
     }
     // Jade for 26.1.2 is built on NeoForge 26.1.2.76, so it runs on our .77. Jade finds the Pillar's
