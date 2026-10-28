@@ -30,26 +30,35 @@ GLOW = (200, 170, 255)
 EYES = [('', 2)] * 3 + [('_uneasy', 2)] * 3 + [('_insane', 2)] * 2 + [('_insane', 1), ('_insane', 0)]
 
 
-# the Shadow Creatures standing over the meter, each Shape drawn front on as its model's front faces,
+# the Shadow Creatures standing over the meter as black silhouettes, each Shape drawn from its model,
 # vanilla's boxes in model units, y downwards: the Lurker's over the Uneasy eyes, the Gaunt's over the
-# Insane, and none over the Sane. A box is (u, v, w, h, d, x, y, mirrored), its front face the texture's
-# w by h at (u + d, v + d), drawn at (x, y); a leg is a spider's, (x, y, its Y and Z turns).
-SHADOW = (0x16, 0x12, 0x1E)  # ShadowRenderers.SHADOW_RGB
-HEAD, BODY = (0, 0, 8, 8, 8, -4, -8, False), (16, 16, 8, 12, 4, -4, 0, False)
+# Insane, and none over the Sane. The zombie and creeper read best side on, facing the Sane end, the
+# spider front on, their boxes drawn solid; the rest stand front on, each box's front face cut from the
+# texture, so its holes show. A part
+# is ('box', x, y, w, h), ('face', u, v, w, h, d, x, y, mirrored), the texture's w by h at (u + d, v + d),
+# or ('leg', x, y, to x, to y), a spider's leg, two units thick.
+
+
+def spider_legs(yrot, zrot):
+    # a spider's pair of legs seen front on, from its sides: vanilla turns each by its Z, then Y turn,
+    # and it reaches 15 units
+    out, down = 15 * math.cos(yrot) * math.cos(zrot), 15 * math.cos(yrot) * math.sin(zrot)
+    return [('leg', -4, 15, -4 - out, 15 + down), ('leg', 4, 15, 4 + out, 15 + down)]
+
+
+HEAD, BODY = ('face', 0, 0, 8, 8, 8, -4, -8, False), ('face', 16, 16, 8, 12, 4, -4, 0, False)
 SHAPES = {
-    'zombie/zombie': [(0, 16, 4, 12, 4, -4, 12, False), (0, 16, 4, 12, 4, 0, 12, True), BODY,
-                      # its arms held out at the onlooker, seen end on
-                      (44, 12, 4, 4, 4, -8, 0, False), (44, 12, 4, 4, 4, 4, 0, True), HEAD],
-    'skeleton/skeleton': [(0, 16, 2, 12, 2, -3, 12, False), (0, 16, 2, 12, 2, 1, 12, True), BODY,
-                          (40, 16, 2, 12, 2, -6, 0, False), (40, 16, 2, 12, 2, 4, 0, True), HEAD],
-    'creeper/creeper': [(0, 16, 4, 6, 4, -4, 18, False), (0, 16, 4, 6, 4, 0, 18, False),
-                        (16, 16, 8, 12, 4, -4, 6, False), (0, 0, 8, 8, 8, -4, -2, False)],
-    'enderman/enderman': [(56, 0, 2, 30, 2, -3, -5, False), (56, 0, 2, 30, 2, 1, -5, True),
-                          (32, 16, 8, 12, 4, -4, -14, False), (56, 0, 2, 30, 2, -6, -14, False),
-                          (56, 0, 2, 30, 2, 4, -14, True), (0, 0, 8, 8, 8, -4, -21, False)],
-    'spider/spider': [(-4, 15, math.pi / 4, -math.pi / 4), (-4, 15, math.pi / 8, -0.58119464),
-                      (-4, 15, -math.pi / 8, -0.58119464), (-4, 15, -math.pi / 4, -math.pi / 4),
-                      (0, 12, 10, 8, 12, -5, 11, False), (32, 4, 8, 8, 8, -4, 11, False)],
+    'zombie/zombie': [('box', -2, 12, 4, 12), ('box', -2, 0, 4, 12), ('box', -4, -8, 8, 8),
+                      # its arms held out before it
+                      ('box', -10, 0, 12, 4)],
+    'skeleton/skeleton': [('face', 0, 16, 2, 12, 2, -3, 12, False), ('face', 0, 16, 2, 12, 2, 1, 12, True), BODY,
+                          ('face', 40, 16, 2, 12, 2, -6, 0, False), ('face', 40, 16, 2, 12, 2, 4, 0, True), HEAD],
+    'creeper/creeper': [('box', -6, 18, 4, 6), ('box', 2, 18, 4, 6), ('box', -2, 6, 4, 12), ('box', -4, -2, 8, 8)],
+    'enderman/enderman': [('face', 56, 0, 2, 30, 2, -3, -5, False), ('face', 56, 0, 2, 30, 2, 1, -5, True),
+                          ('face', 32, 16, 8, 12, 4, -4, -14, False), ('face', 56, 0, 2, 30, 2, -6, -14, False),
+                          ('face', 56, 0, 2, 30, 2, 4, -14, True), ('face', 0, 0, 8, 8, 8, -4, -21, False)],
+    'spider/spider': [*spider_legs(math.pi / 4, math.pi / 4), *spider_legs(math.pi / 8, 0.58119464),
+                      ('box', -5, 11, 10, 8), ('box', -4, 11, 8, 8)],
 }
 LURKERS = ['zombie/zombie', 'skeleton/skeleton']
 GAUNTS = ['creeper/creeper', 'enderman/enderman', 'spider/spider']
@@ -65,43 +74,35 @@ def vanilla(path):
 
 
 def shape(path, k):
-    # a Shape front on, k pixels to the unit, tinted as the Shadow Creature's renderer tints it but
-    # in greys lifted off the night, which it'd otherwise vanish into; returns it and its feet's x and y
-    tex = vanilla(path)
+    # a Shape, k pixels to the unit, in pure black; returns it and its feet's x and y
     parts = SHAPES[path]
+    tex = vanilla(path) if any(p[0] == 'face' for p in parts) else None
     pts = []
     for p in parts:
-        if len(p) == 4:
-            x, y, ry, rz = p
-            pts += [(x, y), (x + 15 * math.copysign(1, x) * math.cos(ry) * math.cos(rz),
-                     y + 15 * math.copysign(1, x) * math.cos(ry) * math.sin(rz))]
-            pts += [(-a, b) for a, b in pts[-2:]]
+        if p[0] == 'box':
+            pts += [p[1:3], (p[1] + p[3], p[2] + p[4])]
+        elif p[0] == 'face':
+            pts += [p[6:8], (p[6] + p[3], p[7] + p[4])]
         else:
-            pts += [(p[5], p[6]), (p[5] + p[2], p[6] + p[3])]
+            pts += [p[1:3], p[3:5]]
     x0, y0 = min(a for a, _ in pts) - 1, min(b for _, b in pts) - 1
     x1, y1 = max(a for a, _ in pts) + 1, max(b for _, b in pts) + 1
     img = Image.new('RGBA', (math.ceil((x1 - x0) * k), math.ceil((y1 - y0) * k)), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
+    at = lambda x, y: (round((x - x0) * k), round((y - y0) * k))
     for p in parts:
-        if len(p) == 4:
-            # a pair of legs, the right and its mirror, in the leg's own colour
-            x, y, ry, rz = p
-            leg = tex.crop((20, 2, 36, 4))
-            c = tuple(sum(px[i] for px in leg.getdata()) // 32 for i in range(3))
-            for side in (1, -1):
-                sx = side * x
-                ex = sx + 15 * side * math.copysign(1, x) * math.cos(ry) * math.cos(rz)
-                ey = y + 15 * math.copysign(1, x) * math.cos(ry) * math.sin(rz)
-                d.line([((sx - x0) * k, (y - y0) * k), ((ex - x0) * k, (ey - y0) * k)], fill=c + (255,), width=2 * k)
+        if p[0] == 'box':
+            d.rectangle([at(*p[1:3]), at(p[1] + p[3], p[2] + p[4])], fill=(0, 0, 0, 255))
+        elif p[0] == 'leg':
+            d.line([at(*p[1:3]), at(*p[3:5])], fill=(0, 0, 0, 255), width=2 * k)
         else:
-            u, v, w, h, dz, x, y, mirrored = p
+            _, u, v, w, h, dz, x, y, mirrored = p
             face = tex.crop((u + dz, v + dz, u + dz + w, v + dz + h)).resize((w * k, h * k), Image.NEAREST)
             if mirrored:
                 face = face.transpose(Image.FLIP_LEFT_RIGHT)
-            img.alpha_composite(face, (round((x - x0) * k), round((y - y0) * k)))
-    grey, a = img.convert('L'), img.getchannel('A')
-    tint = [min(255, c * 4) for c in SHADOW]
-    img = Image.merge('RGBA', [grey.point(lambda v, t=t: v * t // 255) for t in tint] + [a.point(lambda v: v * 9 // 10)])
+            black = Image.new('RGBA', face.size, (0, 0, 0, 255))
+            black.putalpha(face.getchannel('A'))
+            img.alpha_composite(black, at(x, y))
     return img, -x0 * k, (y1 - 1 - y0) * k
 
 
@@ -113,7 +114,7 @@ def shadows(img, cx, w, baseline, k, places):
         gap = 3 * k
         x = cx - w // 2 + first * places + (count * places - sum(m[0].width for m in made) - gap * (len(made) - 1)) // 2
         for s, fx, fy in made:
-            item(img, s, int(x + s.width // 2), int(baseline - fy + s.height // 2), places)
+            item(img, s, int(x + s.width // 2), int(baseline - fy + s.height // 2), places, 0.8)
             x += s.width + gap
 
 
@@ -152,12 +153,12 @@ def field(W, H, px, seed, top):
     return img
 
 
-def item(img, s, cx, cy, px):
+def item(img, s, cx, cy, px, glow=0.35):
     # an item lifted off the night by a very soft glow of its own shape
     r = px // 5
     halo = Image.new('RGBA', (s.width + 4 * r, s.height + 4 * r), GLOW + (0,))
     a = Image.new('L', halo.size, 0)
-    a.paste(s.getchannel('A').point(lambda v: int(v * 0.35)), (2 * r, 2 * r))
+    a.paste(s.getchannel('A').point(lambda v: int(v * glow)), (2 * r, 2 * r))
     halo.putalpha(a.filter(ImageFilter.GaussianBlur(r)))
     img.alpha_composite(halo, (cx - halo.width // 2, cy - halo.height // 2))
     img.alpha_composite(s, (cx - s.width // 2, cy - s.height // 2))
@@ -187,7 +188,7 @@ def font(names, size):
 
 def make(W, H, out, title_size, px, eye, mob, stacked=False):
     # stacked puts "A touch of" above the word, for the square icon
-    img = field(W, H, px, 11, 0.1 if stacked else 0.18)
+    img = field(W, H, px, 11, 0.09 if stacked else 0.18)
     f1 = font(['/System/Library/Fonts/Supplemental/Impact.ttf', '/usr/share/fonts/TTF/impact.ttf',
                os.path.expanduser('~/.local/share/fonts/msfonts/impact.ttf'),
                '/usr/share/fonts/noto/NotoSans-Black.ttf'], title_size)
