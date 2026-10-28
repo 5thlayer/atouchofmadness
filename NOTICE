@@ -30,3 +30,14 @@ Source:  https://github.com/malcolmriley/unused-textures
          cast from his moulds' cavities, shaded in Umbra's palette with a brown grip.
 Licence: Creative Commons Attribution 4.0 International
          https://creativecommons.org/licenses/by/4.0/
+
+Cover and icon
+--------------
+
+Files:   publish/atouchofmadness-cover.png
+         publish/atouchofmadness-icon.png
+Author:  Malcolm Riley
+Source:  https://github.com/malcolmriley/unused-textures, through the Umbra Gear's item textures above,
+         which publish/make-cover.py draws onto the mod pages' cover and icon.
+Licence: Creative Commons Attribution 4.0 International
+         https://creativecommons.org/licenses/by/4.0/

@@ -36,6 +36,7 @@ path = [
     "**/src/gametest/resources/**/*.nbt",
     "LICENSE",
     "NOTICE",
+    "publish/summary.txt",
 ]
 SPDX-FileCopyrightText = "2026 5thlayer"
 SPDX-License-Identifier = "CC-BY-4.0"
@@ -49,7 +50,8 @@ SPDX-License-Identifier = "MIT"
 
 # Malcolm Riley's unused textures (https://github.com/malcolmriley/unused-textures), credited in NOTICE.
 # The unmodified copies under data/art/ are his; a texture scripts/build-textures.py builds from them is
-# both his and ours. Module CI runs that script's --check.
+# both his and ours, as are the cover and icon publish/make-cover.py draws them onto. Module CI runs
+# that script's --check.
 [[annotations]]
 path = ["data/art/*.png"]
 precedence = "override"
@@ -64,6 +66,7 @@ path = [
     "src/main/resources/assets/atouchofmadness/textures/item/umbra_chestplate.png",
     "src/main/resources/assets/atouchofmadness/textures/item/umbra_leggings.png",
     "src/main/resources/assets/atouchofmadness/textures/item/umbra_boots.png",
+    "publish/*.png",
 ]
 precedence = "override"
 SPDX-FileCopyrightText = ["Malcolm Riley", "2026 5thlayer"]
