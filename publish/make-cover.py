@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 5thlayer
 # SPDX-License-Identifier: MIT
 
-# Temporary cover and icon, the Sanity meter slipping from Sane to Insane above the title among the
+# Temporary cover and icon, the Sanity meter reading Uneasy above the title among the
 # Pillar's items, with the Encroachment creeping in from the edges, in the -works suite's style
 # (A Touch of Darkness' make-cover.py), until an in-game screenshot or an artist's art replaces them.
 # They carry Malcolm Riley's art through the Umbra Gear (NOTICE). Run from the repo root with Pillow
@@ -17,10 +17,10 @@ BG = (10, 8, 12)
 ACCENT = (196, 86, 255)  # violet, the suite's, as A Touch of Darkness' and Wickedness' covers
 ITEMS = ['flower_crown', 'umbra', 'umbra_sword', 'umbra_pickaxe', 'umbra_helmet', 'umbra_chestplate',
          'umbra_leggings', 'umbra_boots']
-# the meter's ten eyes, left to right, as Sanity falls: Sane at 100, Uneasy from 50, Insane below 20,
-# down to an empty eye at 0
-EYES = ['full', 'full', 'full', 'full', 'full_uneasy', 'full_uneasy', 'half_uneasy', 'full_insane',
-        'half_insane', 'empty_insane']
+# the meter as the HUD draws it, its ten eyes all in one Stage's icons: Uneasy at 35 of 100 Sanity
+EYES = 10
+STAGE = '_uneasy'
+SANITY = 35
 
 
 def sprite(path, px):
@@ -59,12 +59,18 @@ def field(W, H, px, seed, clear):
     return img
 
 
-def meter(img, cx, bottom, eye, eyes):
-    # the meter's row of eyes, each eye px wide with a pixel's gap, standing on the band's top edge
+def meter(img, cx, bottom, eye):
+    # the meter's row of eyes, each eye px wide with a pixel's gap, standing on the band's top edge; as
+    # the HUD, it fills from the right, each place empty first, then full or half over it
     u = eye // 9
-    w = len(eyes) * 10 * u - u
-    for i, name in enumerate(eyes):
-        img.alpha_composite(sprite(f'gui/sprites/hud/sanity_{name}', 9 * u), (cx - w // 2 + i * 10 * u, bottom - 9 * u))
+    w = EYES * 10 * u - u
+    halves = round(SANITY / 100 * EYES * 2)
+    for place in range(EYES):
+        x = cx + w // 2 - u * 9 - place * 10 * u
+        img.alpha_composite(sprite(f'gui/sprites/hud/sanity_empty{STAGE}', 9 * u), (x, bottom - 9 * u))
+        fill = 'full' if halves >= 2 * place + 2 else 'half' if halves == 2 * place + 1 else None
+        if fill:
+            img.alpha_composite(sprite(f'gui/sprites/hud/sanity_{fill}{STAGE}', 9 * u), (x, bottom - 9 * u))
 
 
 def font(names, size):
@@ -74,7 +80,7 @@ def font(names, size):
     raise SystemExit('needs one of ' + ', '.join(names))
 
 
-def make(W, H, out, title_size, px, eye, eyes, stacked=False):
+def make(W, H, out, title_size, px, eye, stacked=False):
     # stacked puts "A touch of" above the word, for the square icon
     img = field(W, H, px, 11, (0.1, 0.9) if stacked else (0.25, 0.75))
     f1 = font(['/System/Library/Fonts/Supplemental/Impact.ttf', '/usr/share/fonts/TTF/impact.ttf',
@@ -91,7 +97,7 @@ def make(W, H, out, title_size, px, eye, eyes, stacked=False):
     bw, ph = w2 + 2 * gap, (h2 + 2 * pad if stacked else h1)
     th = ph + gap + h1 if stacked else h1
     cy, bh = H // 2, int(th + title_size * 0.6)
-    meter(img, W // 2, cy - bh // 2 - H // 40, eye, eyes)
+    meter(img, W // 2, cy - bh // 2 - H // 40, eye)
     band = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     ImageDraw.Draw(band).rectangle([0, cy - bh // 2, W, cy + bh // 2], fill=(5, 4, 6, 235))
     img = Image.alpha_composite(img, band)
@@ -114,6 +120,5 @@ def make(W, H, out, title_size, px, eye, eyes, stacked=False):
     img.convert('RGB').save(out)
 
 
-make(1280, 640, 'publish/atouchofmadness-cover.png', 150, 80, 45, EYES)
-# the icon's five eyes: Sane, Uneasy, half Uneasy, Insane and empty
-make(512, 512, 'publish/atouchofmadness-icon.png', 84, 56, 54, [EYES[i] for i in (0, 4, 6, 7, 9)], stacked=True)
+make(1280, 640, 'publish/atouchofmadness-cover.png', 150, 80, 45)
+make(512, 512, 'publish/atouchofmadness-icon.png', 84, 56, 36, stacked=True)
