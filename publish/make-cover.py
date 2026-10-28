@@ -49,9 +49,11 @@ def field(W, H, px, seed, clear):
              if y > 0.5 or not clear[0] <= x <= clear[1]]
     rng.shuffle(slots)
     for (fx, fy), name in zip(slots, ITEMS * 2):
-        # upright and on the slot's own column and row, so the items line up across and down
+        # upright and on the slot's own column and row, so the items line up across and down, each
+        # centred by its drawn pixels rather than its tile, since each sprite sits differently in it
         cx, cy = int(fx * W), int(fy * H)
         s = sprite(f'item/{name}', px)
+        s = s.crop(s.getchannel('A').getbbox())
         img.alpha_composite(s, (cx - s.width // 2, cy - s.height // 2))
     img.alpha_composite(encroach(W, H))
     return img
