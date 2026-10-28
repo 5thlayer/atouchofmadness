@@ -2,11 +2,11 @@
 
 ![A Touch of Madness](https://raw.githubusercontent.com/5thlayer/atouchofmadness/main/publish/atouchofmadness-cover.png)
 
-<!-- For players, written by the maintainer and never by an agent: what A Touch of Madness is, why it exists
-and how it feels to play. It is also the Modrinth and CurseForge description
-(docs/agents/publishing.md). The technical sections go below it. -->
+A Touch of Madness adds Sanity, a new stat inspired by Don’t Starve. Sanity starts at 100. Darkness, cold, rain, the Nether, nearby monsters and bad food lower it; company, music, sleep and good food raise it.
 
-Sanity slips under pressure, and the shadows it lets in can kill.
+Low Sanity changes what you see and hear: the screen loses its colour at the edges, dark shapes appear in the corners, and you hear sounds that aren’t there. Shadow Creatures start following you. They’re harmless at first, but once you’re Insane they become real and attack.
+
+Killing one restores some Sanity and drops Umbra. With it you can craft a sword and a pickaxe faster than netherite, and armour as strong as diamond that also makes you faster.
 
 ## For pack authors
 
@@ -62,6 +62,8 @@ All optional, and none nested in the jar:
 ## Dependencies
 
 None beyond NeoForge, on Minecraft 26.1.2. A Touch Of's Runtime, which draws the Sanity meter, is nested in the jar.
+
+This is a hobby project: I’m not monetizing any part of A touch of mods suite. I’m building it for fun, to see how far I can take it.
 
 ## License
 
