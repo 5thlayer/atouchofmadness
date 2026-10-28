@@ -31,8 +31,7 @@ EYES = [('', 2)] * 3 + [('_uneasy', 2)] * 3 + [('_insane', 2)] * 2 + [('_insane'
 
 
 # the Shadow Creatures standing over the meter as black silhouettes, each Shape drawn from its model,
-# vanilla's boxes in model units, y downwards: the Lurker's over the Uneasy eyes, the Gaunt's over the
-# Insane, and none over the Sane. The zombie and creeper read best side on, facing the Sane end, the
+# vanilla's boxes in model units, y downwards, the Lurker's and the Gaunt's. The zombie and creeper read best side on, facing the Sane end, the
 # spider front on, their boxes drawn solid; the rest stand front on, each box's front face cut from the
 # texture, so its holes show. A part
 # is ('box', x, y, w, h), ('face', u, v, w, h, d, x, y, mirrored), the texture's w by h at (u + d, v + d),
@@ -106,16 +105,15 @@ def shape(path, k):
     return img, -x0 * k, (y1 - 1 - y0) * k
 
 
-def shadows(img, cx, w, baseline, k, places):
-    # the creatures on the meter, their feet just above it, each group side by side over the middle of
-    # its places
-    for names, first, count in ((LURKERS, 3, 3), (GAUNTS, 6, 4)):
-        made = [shape(name, k) for name in names]
-        gap = 3 * k
-        x = cx - w // 2 + first * places + (count * places - sum(m[0].width for m in made) - gap * (len(made) - 1)) // 2
-        for s, fx, fy in made:
-            item(img, s, int(x + s.width // 2), int(baseline - fy + s.height // 2), places, 0.8)
-            x += s.width + gap
+def shadows(img, cx, baseline, k):
+    # the creatures in a row centred over the meter, their feet just above it, the Lurker's then the
+    # Gaunt's, a little apart
+    made = [shape(name, k) for name in LURKERS + GAUNTS]
+    gaps = [3 * k] * (len(LURKERS) - 1) + [8 * k] + [3 * k] * (len(GAUNTS) - 1)
+    x = cx - (sum(m[0].width for m in made) + sum(gaps)) // 2
+    for (s, fx, fy), gap in zip(made, gaps + [0]):
+        item(img, s, int(x + s.width // 2), int(baseline - fy + s.height // 2), 10 * k, 0.8)
+        x += s.width + gap
 
 
 def sprite(path, px):
@@ -205,7 +203,7 @@ def make(W, H, out, title_size, px, eye, mob, stacked=False):
     cy, bh = H // 2, int(th + title_size * 0.6)
     meter(img, W // 2, cy - bh // 2 - H // 40, eye)
     u = eye // 9
-    shadows(img, W // 2, len(EYES) * 10 * u - u, cy - bh // 2 - H // 40 - 9 * u - H // 80, mob, 10 * u)
+    shadows(img, W // 2, cy - bh // 2 - H // 40 - 9 * u - H // 80, mob)
     band = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     ImageDraw.Draw(band).rectangle([0, cy - bh // 2, W, cy + bh // 2], fill=(5, 4, 6, 235))
     img = Image.alpha_composite(img, band)
