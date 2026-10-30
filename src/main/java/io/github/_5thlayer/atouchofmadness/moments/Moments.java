@@ -3,6 +3,8 @@
 
 package io.github._5thlayer.atouchofmadness.moments;
 
+import java.util.function.Supplier;
+
 import com.mojang.serialization.Codec;
 import io.github._5thlayer.atouchof.signal.Strike;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
@@ -21,7 +23,6 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.StatAwardEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
@@ -49,16 +50,14 @@ public final class Moments {
             Identifier.fromNamespaceAndPath(ATouchOfMadness.MOD_ID, "sanity_modifier"), Registries.ITEM, Codec.INT)
             .synced(Codec.INT, false).build();
 
-    /** The config's rules, swapped whole when it loads or reloads, possibly off the server thread. */
-    private static volatile MomentRules rules = MomentRules.DEFAULT;
+    /** The config's rules. */
+    private static final Supplier<MomentRules> RULES = MadnessConfig.live(MadnessConfig::momentRules);
 
     private Moments() {
     }
 
     public static void register(IEventBus modBus) {
         modBus.addListener(RegisterDataMapTypesEvent.class, event -> event.register(SANITY_MODIFIER));
-        modBus.addListener(ModConfigEvent.Loading.class, Moments::configChanged);
-        modBus.addListener(ModConfigEvent.Reloading.class, Moments::configChanged);
         NeoForge.EVENT_BUS.addListener(LivingEntityUseItemEvent.Finish.class, Moments::ate);
         NeoForge.EVENT_BUS.addListener(PlayerWakeUpEvent.class, Moments::wokeUp);
         NeoForge.EVENT_BUS.addListener(Strike.class, Moments::struck);
@@ -75,13 +74,13 @@ public final class Moments {
     /** Only waking every sleeper as the night skips wakes a player neither at once nor telling the level. */
     private static void wokeUp(PlayerWakeUpEvent event) {
         if (event.getEntity() instanceof ServerPlayer player && !event.wakeImmediately() && !event.updateLevel()) {
-            PlayerSanity.add(player, rules.sleep(), Cause.SLEEP);
+            PlayerSanity.add(player, RULES.get().sleep(), Cause.SLEEP);
         }
     }
 
     /** The signal carries no cost of its own: what a Strike takes is this Pillar's (suite ADR-0004). */
     private static void struck(Strike strike) {
-        PlayerSanity.add(strike.player(), -rules.struckByTheDark(), Cause.STRUCK_BY_THE_DARK);
+        PlayerSanity.add(strike.player(), -RULES.get().struckByTheDark(), Cause.STRUCK_BY_THE_DARK);
     }
 
     /** A stat is awarded with its new total, and reset with 0; only a rise is a slice eaten or a block broken. */
@@ -94,7 +93,7 @@ public final class Moments {
             applyModifier(player, BuiltInRegistries.ITEM.wrapAsHolder(Items.CAKE));
         } else if (stat.getType() == Stats.BLOCK_MINED && stat.getValue() instanceof Block block
                 && block.defaultBlockState().is(BlockTags.FLOWERS)) {
-            PlayerSanity.add(player, rules.flower(), Cause.FLOWER);
+            PlayerSanity.add(player, RULES.get().flower(), Cause.FLOWER);
         }
     }
 
@@ -108,12 +107,6 @@ public final class Moments {
         int modifier = modifier(item);
         if (modifier != 0) {
             PlayerSanity.add(player, modifier, Cause.FOOD);
-        }
-    }
-
-    private static void configChanged(ModConfigEvent event) {
-        if (event.getConfig().getSpec() == MadnessConfig.SPEC) {
-            rules = MadnessConfig.momentRules();
         }
     }
 }

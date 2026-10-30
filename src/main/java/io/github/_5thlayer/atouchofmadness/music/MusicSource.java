@@ -24,7 +24,6 @@ import net.minecraft.world.level.block.entity.JukeboxBlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.level.BlockEvent;
@@ -66,16 +65,14 @@ public final class MusicSource {
     private static final Supplier<AttachmentType<Long>> SONG_ID = ATTACHMENTS.register("song_id",
             () -> AttachmentType.builder(() -> 0L).serialize(Codec.LONG.fieldOf("id")).build());
 
-    /** The config's rules, swapped whole when it loads or reloads, possibly off the server thread. */
-    private static volatile MusicRules rules = MusicRules.DEFAULT;
+    /** The config's rules. */
+    private static final Supplier<MusicRules> RULES = MadnessConfig.live(MadnessConfig::musicRules);
 
     private MusicSource() {
     }
 
     public static void register(IEventBus modBus) {
         ATTACHMENTS.register(modBus);
-        modBus.addListener(ModConfigEvent.Loading.class, MusicSource::configChanged);
-        modBus.addListener(ModConfigEvent.Reloading.class, MusicSource::configChanged);
         PlayerSanity.addSource(MusicSource::music);
         NeoForge.EVENT_BUS.addListener(EventPriority.NORMAL, true, BlockEvent.NeighborNotifyEvent.class,
                 MusicSource::songChanged);
@@ -107,7 +104,7 @@ public final class MusicSource {
      * play in their history, which only the once-a-second evaluation calls it to do.
      */
     private static Rate music(ServerPlayer player) {
-        var current = rules;
+        var current = RULES.get();
         var found = nearestPlaying(player, current.range());
         if (found.isEmpty()) {
             return Rate.NONE;
@@ -202,11 +199,5 @@ public final class MusicSource {
             }
         }
         return Optional.ofNullable(nearest);
-    }
-
-    private static void configChanged(ModConfigEvent event) {
-        if (event.getConfig().getSpec() == MadnessConfig.SPEC) {
-            rules = MadnessConfig.musicRules();
-        }
     }
 }

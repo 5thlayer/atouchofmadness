@@ -62,6 +62,14 @@ class ShadowRulesTest {
         assertEquals(weight, ShadowRules.DEFAULT.weightOf(2, real));
     }
 
+    @Test
+    void aFarthestSpawnDistanceNearerThanTheNearestIsReadAsTheNearest() {
+        var d = ShadowRules.DEFAULT;
+        var rules = new ShadowRules(d.caps(), d.intervalTicks(), 16, 8, d.fadeDistance(), d.gauntBelow(), d.gauntChance(), d.realFactor(),
+                d.strike(), d.lurker(), d.gaunt());
+        assertEquals(16, rules.maxDistance());
+    }
+
     /** An Uneasy player in Survival, alive, awake, where Shadow Creatures come: Haunted. */
     private static final PlayerFacts HAUNTED = new PlayerFacts(Stage.UNEASY, 30, true, true, false, true);
 

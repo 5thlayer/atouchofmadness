@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
@@ -29,7 +30,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -59,8 +59,8 @@ public final class ShadowCreatures {
 
     public static final DeferredItem<Item> UMBRA = ITEMS.registerSimpleItem("umbra");
 
-    /** The config's rules, swapped whole when it loads or reloads, possibly off the server thread. */
-    private static volatile ShadowRules rules = ShadowRules.DEFAULT;
+    /** The config's rules. */
+    private static final Supplier<ShadowRules> RULES = MadnessConfig.live(MadnessConfig::shadowRules);
 
     /** Each Owner's creatures in a level, in the order they came; server thread only. */
     private static final Map<UUID, Set<ShadowCreature>> BY_OWNER = new HashMap<>();
@@ -73,8 +73,6 @@ public final class ShadowCreatures {
         ITEMS.register(modBus);
         ShadowSounds.register(modBus);
         modBus.addListener(EntityAttributeCreationEvent.class, ShadowCreatures::attributes);
-        modBus.addListener(ModConfigEvent.Loading.class, ShadowCreatures::configChanged);
-        modBus.addListener(ModConfigEvent.Reloading.class, ShadowCreatures::configChanged);
         PlayerSanity.addSource(player -> Rate.drain(nearby(player), Cause.SHADOW_CREATURE));
         PlayerSanity.onStageChange(ShadowCreatures::retrack);
         Shapes.register(modBus);
@@ -82,7 +80,7 @@ public final class ShadowCreatures {
     }
 
     public static ShadowRules rules() {
-        return rules;
+        return RULES.get();
     }
 
     /** What the rules need to know of the player, as they are now. */
@@ -131,7 +129,7 @@ public final class ShadowCreatures {
     }
 
     private static double nearby(ServerPlayer player) {
-        var current = rules;
+        var current = RULES.get();
         return NearbySources.unsettlingDrain(player, entity -> entity instanceof ShadowCreature creature && creature.isOwnedBy(player),
                 (entity, weight) -> current.weightOf(weight, ((ShadowCreature) entity).isReal()));
     }
@@ -144,11 +142,5 @@ public final class ShadowCreatures {
     /** The attributes each creature has; it sets its stats from the config as it is made. */
     private static AttributeSupplier.Builder creatureAttributes() {
         return Mob.createMobAttributes().add(Attributes.ATTACK_DAMAGE);
-    }
-
-    private static void configChanged(ModConfigEvent event) {
-        if (event.getConfig().getSpec() == MadnessConfig.SPEC) {
-            rules = MadnessConfig.shadowRules();
-        }
     }
 }

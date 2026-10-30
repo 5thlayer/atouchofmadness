@@ -3,6 +3,8 @@
 
 package io.github._5thlayer.atouchofmadness.crown;
 
+import java.util.function.Supplier;
+
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
@@ -17,7 +19,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.equipment.EquipmentAssets;
 import net.minecraft.world.item.equipment.Equippable;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AnvilUpdateEvent;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -44,16 +45,14 @@ public final class FlowerCrown {
                     .setDamageOnHurt(false)
                     .build()));
 
-    /** The config's rules, swapped whole when it loads or reloads, possibly off the server thread. */
-    private static volatile CrownRules rules = CrownRules.DEFAULT;
+    /** The config's rules. */
+    private static final Supplier<CrownRules> RULES = MadnessConfig.live(MadnessConfig::crownRules);
 
     private FlowerCrown() {
     }
 
     public static void register(IEventBus modBus) {
         ITEMS.register(modBus);
-        modBus.addListener(ModConfigEvent.Loading.class, FlowerCrown::configChanged);
-        modBus.addListener(ModConfigEvent.Reloading.class, FlowerCrown::configChanged);
         PlayerSanity.addSource(player -> Rate.restore(worn(player), Cause.FLOWER_CROWN));
         NeoForge.EVENT_BUS.addListener(AnvilUpdateEvent.class, FlowerCrown::anvil);
     }
@@ -67,7 +66,7 @@ public final class FlowerCrown {
         if (!stack.is(ITEM)) {
             return 0;
         }
-        var current = rules;
+        var current = RULES.get();
         int lasting = current.wearTicks();
         if (stack.getMaxDamage() != lasting) {
             int wear = current.wearOf(stack.getDamageValue(), stack.getMaxDamage());
@@ -85,12 +84,6 @@ public final class FlowerCrown {
     private static void anvil(AnvilUpdateEvent event) {
         if (event.getLeft().is(ITEM) && !event.getRight().isEmpty()) {
             event.setCanceled(true);
-        }
-    }
-
-    private static void configChanged(ModConfigEvent event) {
-        if (event.getConfig().getSpec() == MadnessConfig.SPEC) {
-            rules = MadnessConfig.crownRules();
         }
     }
 }

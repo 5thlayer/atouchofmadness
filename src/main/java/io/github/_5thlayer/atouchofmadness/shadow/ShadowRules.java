@@ -50,11 +50,10 @@ public record ShadowRules(List<Double> caps, int intervalTicks, double minDistan
     public static final ShadowRules DEFAULT = new ShadowRules(List.of(50.0, 35.0, 20.0, 10.0), 20 * 20, 12, 24, 4,
             10, 0.5, 2, 5, new Stats(30, 4, 2.5, 10), new Stats(16, 7, 5, 20));
 
+    /** A farthest spawn distance nearer than the nearest is read as the nearest. */
     public ShadowRules {
         caps = List.copyOf(caps);
-        if (maxDistance < minDistance) {
-            throw new IllegalArgumentException("The farthest a creature spawns, " + maxDistance + ", is nearer than the nearest, " + minDistance);
-        }
+        maxDistance = Math.max(maxDistance, minDistance);
     }
 
     /** These rules with other cap thresholds. */

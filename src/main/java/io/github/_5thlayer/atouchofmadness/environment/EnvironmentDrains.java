@@ -3,6 +3,8 @@
 
 package io.github._5thlayer.atouchofmadness.environment;
 
+import java.util.function.Supplier;
+
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
@@ -17,7 +19,6 @@ import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.level.MoonPhase;
 import net.minecraft.world.level.dimension.DimensionType;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.event.config.ModConfigEvent;
 
 /**
  * The continuous drains of where a player stands, each read from vanilla state (suite ADR-0002):
@@ -31,19 +32,17 @@ public final class EnvironmentDrains {
     public static final TagKey<DimensionType> UNSETTLING = TagKey.create(Registries.DIMENSION_TYPE,
             Identifier.fromNamespaceAndPath(ATouchOfMadness.MOD_ID, "unsettling"));
 
-    /** The config's rules, swapped whole when it loads or reloads, possibly off the server thread. */
-    private static volatile EnvironmentRules rules = EnvironmentRules.DEFAULT;
+    /** The config's rules. */
+    private static final Supplier<EnvironmentRules> RULES = MadnessConfig.live(MadnessConfig::environmentRules);
 
     private EnvironmentDrains() {
     }
 
     public static void register(IEventBus modBus) {
-        modBus.addListener(ModConfigEvent.Loading.class, EnvironmentDrains::configChanged);
-        modBus.addListener(ModConfigEvent.Reloading.class, EnvironmentDrains::configChanged);
-        PlayerSanity.addSource(player -> drainIf(isInLowLight(player), rules.lowLight(), Cause.LOW_LIGHT));
-        PlayerSanity.addSource(player -> drainIf(player.getTicksFrozen() > 0, rules.freezing(), Cause.FREEZING));
-        PlayerSanity.addSource(player -> drainIf(player.isInWaterOrRain(), rules.wet(), Cause.WET));
-        PlayerSanity.addSource(player -> drainIf(player.level().dimensionTypeRegistration().is(UNSETTLING), rules.unsettling(), Cause.UNSETTLING_DIMENSION));
+        PlayerSanity.addSource(player -> drainIf(isInLowLight(player), RULES.get().lowLight(), Cause.LOW_LIGHT));
+        PlayerSanity.addSource(player -> drainIf(player.getTicksFrozen() > 0, RULES.get().freezing(), Cause.FREEZING));
+        PlayerSanity.addSource(player -> drainIf(player.isInWaterOrRain(), RULES.get().wet(), Cause.WET));
+        PlayerSanity.addSource(player -> drainIf(player.level().dimensionTypeRegistration().is(UNSETTLING), RULES.get().unsettling(), Cause.UNSETTLING_DIMENSION));
     }
 
     /**
@@ -55,7 +54,7 @@ public final class EnvironmentDrains {
         var eye = BlockPos.containing(player.getEyePosition());
         boolean fullMoonOverhead = hasMoon(level.dimensionType()) && level.canSeeSky(eye)
                 && level.environmentAttributes().getValue(EnvironmentAttributes.MOON_PHASE, eye) == MoonPhase.FULL_MOON;
-        return rules.isLowLight(level.getMaxLocalRawBrightness(eye), fullMoonOverhead);
+        return RULES.get().isLowLight(level.getMaxLocalRawBrightness(eye), fullMoonOverhead);
     }
 
     /**
@@ -68,11 +67,5 @@ public final class EnvironmentDrains {
 
     private static Rate drainIf(boolean applies, double perMinute, Cause cause) {
         return applies ? Rate.drain(perMinute, cause) : Rate.NONE;
-    }
-
-    private static void configChanged(ModConfigEvent event) {
-        if (event.getConfig().getSpec() == MadnessConfig.SPEC) {
-            rules = MadnessConfig.environmentRules();
-        }
     }
 }

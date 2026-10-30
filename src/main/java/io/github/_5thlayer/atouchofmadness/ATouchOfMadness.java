@@ -35,6 +35,7 @@ public final class ATouchOfMadness {
     public ATouchOfMadness(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.COMMON, MadnessConfig.SPEC);
         container.registerConfig(ModConfig.Type.CLIENT, MadnessClientConfig.SPEC);
+        MadnessConfig.register(modBus);
         MadnessTab.register(modBus);
         PlayerSanity.register(modBus);
         EnvironmentDrains.register(modBus);

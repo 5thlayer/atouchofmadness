@@ -4,7 +4,6 @@
 package io.github._5thlayer.atouchofmadness.sanity;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
@@ -59,7 +58,10 @@ class SanityRulesTest {
     }
 
     @Test
-    void theInsaneLineCannotBeAboveTheSaneOne() {
-        assertThrows(IllegalArgumentException.class, () -> new SanityRules(new Sanity(100), new Sanity(50), 20, 50));
+    void anInsaneLineAboveTheSaneOneIsReadAsTheSaneOne() {
+        var rules = new SanityRules(new Sanity(100), new Sanity(50), 20, 50);
+        assertEquals(20, rules.insaneBelow());
+        assertEquals(Stage.UNEASY, rules.stageOf(new Sanity(20)));
+        assertEquals(Stage.INSANE, rules.stageOf(new Sanity(19)));
     }
 }

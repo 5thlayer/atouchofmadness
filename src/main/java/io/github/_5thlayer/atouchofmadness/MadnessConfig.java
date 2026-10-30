@@ -4,6 +4,8 @@
 package io.github._5thlayer.atouchofmadness;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
 
 import io.github._5thlayer.atouchofmadness.crown.CrownRules;
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
@@ -14,13 +16,16 @@ import io.github._5thlayer.atouchofmadness.sanity.Sanity;
 import io.github._5thlayer.atouchofmadness.sanity.SanityRules;
 import io.github._5thlayer.atouchofmadness.shadow.ShadowRules;
 import io.github._5thlayer.atouchofmadness.umbra.UmbraRules;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * The common config, {@code atouchofmadness-common.toml}: where Sanity starts and where its stages
  * begin, the drains of where a player stands, the drain and restore of who is near, the restore of
  * music, the restores of sleep and flowers and the drain of a Strike by the Dark, the Flower Crown, the
- * Shadow Creatures, the drains of Umbra Gear, and whether discovery hides what each does.
+ * Shadow Creatures, the drains of Umbra Gear, and whether discovery hides what each does. Each feature
+ * holds its rules {@link #live}, and they are read anew whenever the config loads or reloads.
  */
 public final class MadnessConfig {
 
@@ -239,7 +244,57 @@ public final class MadnessConfig {
 
     public static final ModConfigSpec SPEC = BUILDER.build();
 
+    private static final List<Live<?>> LIVE = new CopyOnWriteArrayList<>();
+    private static final List<Runnable> RELOAD_LISTENERS = new CopyOnWriteArrayList<>();
+
     private MadnessConfig() {
+    }
+
+    public static void register(IEventBus modBus) {
+        modBus.addListener(ModConfigEvent.Loading.class, MadnessConfig::changed);
+        modBus.addListener(ModConfigEvent.Reloading.class, MadnessConfig::changed);
+    }
+
+    /**
+     * Rules read from the config by {@code read}: its defaults until the config loads, then read anew,
+     * whole, each time it loads or reloads, possibly off the server thread.
+     */
+    public static <T> Supplier<T> live(Supplier<T> read) {
+        var live = new Live<>(read);
+        LIVE.add(live);
+        return live;
+    }
+
+    /** Adds a listener that hears of every load and reload of the config, once each {@link #live} rules have been read anew. */
+    public static void onReload(Runnable listener) {
+        RELOAD_LISTENERS.add(listener);
+    }
+
+    private static void changed(ModConfigEvent event) {
+        if (event.getConfig().getSpec() == SPEC) {
+            LIVE.forEach(Live::read);
+            RELOAD_LISTENERS.forEach(Runnable::run);
+        }
+    }
+
+    private static final class Live<T> implements Supplier<T> {
+
+        private final Supplier<T> read;
+        private volatile T value;
+
+        Live(Supplier<T> read) {
+            this.read = read;
+            value = read.get();
+        }
+
+        void read() {
+            value = read.get();
+        }
+
+        @Override
+        public T get() {
+            return value;
+        }
     }
 
     /** The defaults until the config loads. */
@@ -247,9 +302,7 @@ public final class MadnessConfig {
         if (!SPEC.isLoaded()) {
             return SanityRules.DEFAULT;
         }
-        double saneAbove = SANE_ABOVE.get();
-        return new SanityRules(new Sanity(START.get()), new Sanity(RESPAWN.get()), saneAbove,
-                Math.min(INSANE_BELOW.get(), saneAbove));
+        return new SanityRules(new Sanity(START.get()), new Sanity(RESPAWN.get()), SANE_ABOVE.get(), INSANE_BELOW.get());
     }
 
     /** The defaults until the config loads. */
@@ -289,9 +342,8 @@ public final class MadnessConfig {
         if (!SPEC.isLoaded()) {
             return ShadowRules.DEFAULT;
         }
-        double minDistance = MIN_DISTANCE.get();
-        return new ShadowRules(CAPS.get().stream().map(Number::doubleValue).toList(), INTERVAL.get() * 20, minDistance,
-                Math.max(MAX_DISTANCE.get(), minDistance), FADE_DISTANCE.get(), GAUNT_BELOW.get(), GAUNT_CHANCE.get(), REAL_FACTOR.get(),
+        return new ShadowRules(CAPS.get().stream().map(Number::doubleValue).toList(), INTERVAL.get() * 20, MIN_DISTANCE.get(),
+                MAX_DISTANCE.get(), FADE_DISTANCE.get(), GAUNT_BELOW.get(), GAUNT_CHANCE.get(), REAL_FACTOR.get(),
                 STRIKE.get(), LURKER.get(), GAUNT.get());
     }
 

@@ -4,6 +4,7 @@
 package io.github._5thlayer.atouchofmadness.umbra;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
@@ -28,7 +29,6 @@ import net.minecraft.world.item.equipment.ArmorMaterials;
 import net.minecraft.world.item.equipment.ArmorType;
 import net.minecraft.world.item.equipment.EquipmentAssets;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -79,16 +79,14 @@ public final class UmbraGear {
 
     private static final List<EquipmentSlot> HANDS = List.of(EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND);
 
-    /** The config's rules, swapped whole when it loads or reloads, possibly off the server thread. */
-    private static volatile UmbraRules rules = UmbraRules.DEFAULT;
+    /** The config's rules. */
+    private static final Supplier<UmbraRules> RULES = MadnessConfig.live(MadnessConfig::umbraRules);
 
     private UmbraGear() {
     }
 
     public static void register(IEventBus modBus) {
         ITEMS.register(modBus);
-        modBus.addListener(ModConfigEvent.Loading.class, UmbraGear::configChanged);
-        modBus.addListener(ModConfigEvent.Reloading.class, UmbraGear::configChanged);
         PlayerSanity.addSource(player -> Rate.drain(inUse(player), Cause.UMBRA_GEAR));
     }
 
@@ -116,12 +114,6 @@ public final class UmbraGear {
                 armour += ARMOUR_PIECES.stream().anyMatch(worn::is) ? 1 : 0;
             }
         }
-        return rules.drain(swords, pickaxes, armour);
-    }
-
-    private static void configChanged(ModConfigEvent event) {
-        if (event.getConfig().getSpec() == MadnessConfig.SPEC) {
-            rules = MadnessConfig.umbraRules();
-        }
+        return RULES.get().drain(swords, pickaxes, armour);
     }
 }

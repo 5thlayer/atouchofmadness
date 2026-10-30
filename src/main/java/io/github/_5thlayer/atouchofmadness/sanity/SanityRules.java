@@ -13,10 +13,9 @@ public record SanityRules(Sanity start, Sanity respawn, double saneAbove, double
     /** The defaults: start at 100, respawn at 50, Sane above 50, Insane below 20. */
     public static final SanityRules DEFAULT = new SanityRules(new Sanity(100), new Sanity(50), 50, 20);
 
+    /** Insane below a line above Sane's is read as Insane below Sane's. */
     public SanityRules {
-        if (insaneBelow > saneAbove) {
-            throw new IllegalArgumentException("Insane below " + insaneBelow + " is above Sane above " + saneAbove);
-        }
+        insaneBelow = Math.min(insaneBelow, saneAbove);
     }
 
     public Stage stageOf(Sanity sanity) {

@@ -19,7 +19,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
@@ -77,15 +76,15 @@ public final class PlayerSanity {
     /** How many ticks apart the continuous drains and restores are evaluated (ADR 0005). */
     public static final int EVALUATION_TICKS = 20;
 
-    /** The config's rules, swapped whole when it loads or reloads, possibly off the server thread. */
-    private static volatile SanityRules rules = SanityRules.DEFAULT;
+    /** The config's rules. */
+    private static final Supplier<SanityRules> RULES = MadnessConfig.live(MadnessConfig::sanityRules);
     private static boolean notifying;
 
     private static final DeferredRegister<AttachmentType<?>> ATTACHMENTS =
             DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, ATouchOfMadness.MOD_ID);
 
     private static final Supplier<AttachmentType<Sanity>> SANITY = ATTACHMENTS.register("sanity",
-            () -> AttachmentType.builder(() -> rules.start())
+            () -> AttachmentType.builder(() -> RULES.get().start())
                     .serialize(Codec.DOUBLE.xmap(Sanity::new, Sanity::value).fieldOf("value"))
                     .build());
 
@@ -100,8 +99,7 @@ public final class PlayerSanity {
 
     public static void register(IEventBus modBus) {
         ATTACHMENTS.register(modBus);
-        modBus.addListener(ModConfigEvent.Loading.class, PlayerSanity::configChanged);
-        modBus.addListener(ModConfigEvent.Reloading.class, PlayerSanity::configChanged);
+        MadnessConfig.onReload(PlayerSanity::recheck);
     }
 
     /** Adds a continuous drain or restore, which applies from the next evaluation on. */
@@ -132,7 +130,7 @@ public final class PlayerSanity {
     }
 
     public static Stage stage(ServerPlayer player) {
-        return rules.stageOf(get(player));
+        return RULES.get().stageOf(get(player));
     }
 
     /** The Net rate of the player's last evaluation, in Sanity a minute: 0 when nothing applied, or before the first since they joined. */
@@ -182,7 +180,7 @@ public final class PlayerSanity {
             return;
         }
         var sanity = get(player);
-        var current = rules;
+        var current = RULES.get();
         var changed = tracker.observe(sanity, current);
         notifying = true;
         try {
@@ -235,16 +233,12 @@ public final class PlayerSanity {
     @SubscribeEvent
     static void respawn(PlayerEvent.Clone event) {
         if (event.isWasDeath() && event.getEntity() instanceof ServerPlayer player) {
-            set(player, rules.respawn());
+            set(player, RULES.get().respawn());
         }
     }
 
-    /** Takes the config's new rules, and tells the listeners of every player they move across a threshold. */
-    private static void configChanged(ModConfigEvent event) {
-        if (event.getConfig().getSpec() != MadnessConfig.SPEC) {
-            return;
-        }
-        rules = MadnessConfig.sanityRules();
+    /** Tells the listeners of every player the config's new rules move across a threshold. */
+    private static void recheck() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) {
             return;
