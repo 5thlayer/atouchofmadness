@@ -9,7 +9,7 @@ import java.util.function.Function;
 
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
-import io.github._5thlayer.atouchofmadness.sanity.Stage;
+import io.github._5thlayer.atouchofmadness.shadow.ShadowRules.Attacker;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
@@ -47,10 +47,11 @@ import org.jspecify.annotations.Nullable;
  * no harm, collides with nothing, and fades once they come within the fade distance or strike it.
  * While they are Insane it is Real: it hunts them, coming out beside them where a block is in its way,
  * can be killed, and each of its hits takes the strike from their Sanity, while a player's kill of it
- * restores theirs. It is never saved, and vanishes as soon as its Owner is gone, dead, in another
- * dimension, asleep or out of Survival and Adventure; the spawner removes it when the Owner's cap drops
- * below their count. It never stops its Owner sleeping, being no {@code Monster}. It is drawn as its
- * Shape, which it takes as it appears and which changes nothing but its look.
+ * restores theirs. It is never saved, and vanishes as soon as its Owner is gone, in another dimension
+ * or no longer Haunted; the spawner removes it when the Owner's cap drops below their count. It never
+ * stops its Owner sleeping, being no {@code Monster}. It is drawn as its Shape, which it takes as it
+ * appears and which changes nothing but its look. Every decision about its state is
+ * {@link ShadowRules}'; it gathers the facts and acts on them.
  */
 public abstract class ShadowCreature extends PathfinderMob {
 
@@ -150,14 +151,9 @@ public abstract class ShadowCreature extends PathfinderMob {
         return player != null && isRealFor(player);
     }
 
-    /** Whether a creature is Real to this player: whether they are Insane. */
+    /** Whether a creature this player owns is Real: whether they are Insane. */
     private static boolean isRealFor(ServerPlayer player) {
-        return PlayerSanity.stage(player) == Stage.INSANE;
-    }
-
-    /** Whether it can neither harm nor be harmed now: Unreal, or fading. */
-    private boolean isHarmless() {
-        return !isReal() || isFading();
+        return ShadowRules.isReal(PlayerSanity.stage(player));
     }
 
     public boolean isFading() {
@@ -183,7 +179,7 @@ public abstract class ShadowCreature extends PathfinderMob {
 
     /** Its Owner and any Insane player see it, and only they can hit it. */
     public boolean canBeSeenBy(ServerPlayer player) {
-        return isOwnedBy(player) || isRealFor(player);
+        return ShadowRules.isSeenBy(isOwnedBy(player), PlayerSanity.stage(player));
     }
 
     @Override
@@ -200,7 +196,7 @@ public abstract class ShadowCreature extends PathfinderMob {
             return;
         }
         var player = owner();
-        if (player == null || vanishesFrom(player)) {
+        if (player == null || player.level() != level() || !ShadowRules.isHaunted(ShadowCreatures.factsOf(player))) {
             discard();
             return;
         }
@@ -209,35 +205,27 @@ public abstract class ShadowCreature extends PathfinderMob {
         if (real) {
             entityData.set(DATA_FADING, false);
             fadeTicks = 0;
-        } else {
-            double fadeDistance = ShadowCreatures.rules().fadeDistance();
-            if (distanceToSqr(player) <= fadeDistance * fadeDistance) {
-                fade();
-            }
         }
-        setTarget(real && !isFading() ? player : null);
-    }
-
-    private boolean vanishesFrom(ServerPlayer player) {
-        return !player.isAlive() || player.level() != level() || player.isSleeping() || !player.gameMode.isSurvival();
+        if (ShadowCreatures.rules().fadesAt(real, distanceToSqr(player))) {
+            fade();
+        }
+        setTarget(ShadowRules.isHarmless(real, isFading()) ? null : player);
     }
 
     /** An Unreal creature, or one fading, is struck by an entity only to fade, and harmed by nothing short of a kill. */
     @Override
     public boolean hurtServer(ServerLevel level, DamageSource source, float damage) {
-        if (source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
-            return super.hurtServer(level, source, damage);
-        }
-        if (source.getEntity() instanceof ServerPlayer player && !canBeSeenBy(player)) {
-            return false;
-        }
-        if (isHarmless()) {
-            if (source.getEntity() != null) {
+        var by = source.getEntity() == null ? Attacker.NONE
+                : source.getEntity() instanceof ServerPlayer player && !canBeSeenBy(player) ? Attacker.UNSEEING_PLAYER
+                : Attacker.ENTITY;
+        return switch (ShadowRules.struck(isReal(), isFading(), by, source.is(DamageTypeTags.BYPASSES_INVULNERABILITY))) {
+            case HURT -> super.hurtServer(level, source, damage);
+            case IGNORED -> false;
+            case FADES -> {
                 fade();
+                yield false;
             }
-            return false;
-        }
-        return super.hurtServer(level, source, damage);
+        };
     }
 
     /**
@@ -246,7 +234,7 @@ public abstract class ShadowCreature extends PathfinderMob {
      */
     @Override
     public boolean doHurtTarget(ServerLevel level, Entity target) {
-        if (isHarmless() || isInsideBlocks()) {
+        if (!ShadowRules.mayHit(isReal(), isFading(), isInsideBlocks())) {
             return false;
         }
         // To the players it is sent to alone, who play the cry themselves.

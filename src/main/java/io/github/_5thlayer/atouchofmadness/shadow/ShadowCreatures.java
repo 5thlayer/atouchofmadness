@@ -16,7 +16,6 @@ import io.github._5thlayer.atouchofmadness.nearby.NearbySources;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Rate;
-import io.github._5thlayer.atouchofmadness.sanity.Stage;
 import io.github._5thlayer.atouchofmadness.sanity.StageChange;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -86,6 +85,12 @@ public final class ShadowCreatures {
         return rules;
     }
 
+    /** What the rules need to know of the player, as they are now. */
+    public static ShadowRules.PlayerFacts factsOf(ServerPlayer player) {
+        return new ShadowRules.PlayerFacts(PlayerSanity.stage(player), PlayerSanity.get(player).value(), player.gameMode.isSurvival(),
+                player.isAlive(), player.isSleeping(), player.level().dimensionTypeRegistration().is(SHADOWS));
+    }
+
     /** The player's creatures in the level, oldest first. */
     public static List<ShadowCreature> of(ServerPlayer player) {
         return BY_OWNER.getOrDefault(player.getUUID(), Set.of()).stream().filter(creature -> !creature.isRemoved()).toList();
@@ -111,7 +116,7 @@ public final class ShadowCreatures {
      * Each is sent anew to everyone it is sent to.
      */
     private static void retrack(ServerPlayer player, StageChange change) {
-        if (change.from().isEmpty() || (change.from().get() == Stage.INSANE) == (change.to() == Stage.INSANE)) {
+        if (!ShadowRules.retracks(change)) {
             return;
         }
         var level = player.level();

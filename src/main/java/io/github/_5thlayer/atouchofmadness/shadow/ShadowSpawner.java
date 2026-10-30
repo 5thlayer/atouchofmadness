@@ -7,7 +7,6 @@ import java.util.Comparator;
 import java.util.Optional;
 
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
-import io.github._5thlayer.atouchofmadness.sanity.Stage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -23,14 +22,13 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 /**
- * Brings each player's Shadow Creatures. A player has a cap only while Uneasy or Insane, in Survival or
- * Adventure, awake, in a dimension type in {@link ShadowCreatures#SHADOWS}: then their Sanity sets it,
- * and the Lurkers and Gaunts share it. Every spawn interval, on a tick of the player's own, an attempt
- * is made while they are under it; once a second, the farthest of their creatures beyond it are
- * removed. A creature appears between the nearest and the farthest spawn distance, on a block it can
- * stand on, out of the player's sight if any such place is found; light doesn't matter. It takes its
- * Shape from the biome of that place. The attempts
- * every interval stop while {@code doMobSpawning} is off, as other mobs' do.
+ * Brings each player's Shadow Creatures. A player has a cap only while Haunted, which takes a dimension
+ * type in {@link ShadowCreatures#SHADOWS}: then their Sanity sets it, and the Lurkers and Gaunts share
+ * it. Every spawn interval, on a tick of the player's own, an attempt is made while they are under it;
+ * once a second, the farthest of their creatures beyond it are removed. A creature appears between the
+ * nearest and the farthest spawn distance, on a block it can stand on, out of the player's sight if any
+ * such place is found; light doesn't matter. It takes its Shape from the biome of that place. The
+ * attempts every interval stop while {@code doMobSpawning} is off, as other mobs' do.
  */
 public final class ShadowSpawner {
 
@@ -67,12 +65,7 @@ public final class ShadowSpawner {
 
     /** How many Shadow Creatures the player may have now. */
     public static int cap(ServerPlayer player) {
-        var level = player.level();
-        if (PlayerSanity.stage(player) == Stage.SANE || !player.gameMode.isSurvival() || !player.isAlive() || player.isSleeping()
-                || !level.dimensionTypeRegistration().is(ShadowCreatures.SHADOWS)) {
-            return 0;
-        }
-        return ShadowCreatures.rules().capFor(PlayerSanity.get(player).value());
+        return ShadowCreatures.rules().capFor(ShadowCreatures.factsOf(player));
     }
 
     /** Makes a spawn attempt for the player now, if they are under their cap, and returns what came of it. */
