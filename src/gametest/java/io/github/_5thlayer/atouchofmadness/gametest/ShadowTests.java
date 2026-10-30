@@ -13,7 +13,6 @@ import java.util.function.Supplier;
 
 import com.mojang.authlib.GameProfile;
 import io.github._5thlayer.atouchofmadness.discovery.Discovery;
-import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Sanity;
@@ -106,9 +105,6 @@ final class ShadowTests {
     static final double UNEASY = 40;
     private static final double INSANE = 15;
     private static final double GAUNTS = 5;
-
-    /** A restore of 1 a minute, as a rate in Sanity a tick. */
-    private static final double PER_MINUTE = -EnvironmentRules.drainPerTick(1);
 
     /** Each player's id and the id of each entity vanilla's tracker sends them, by NeoForge's tracking events. */
     private static final Set<String> TRACKING = ConcurrentHashMap.newKeySet();
@@ -947,7 +943,7 @@ final class ShadowTests {
     }
 
     private static void expectNetRate(GameTestHelper helper, ServerPlayer player, double perMinute) {
-        double read = PlayerSanity.netRate(player) / PER_MINUTE;
+        double read = PlayerSanity.netRate(player);
         if (Math.abs(read - perMinute) > 1e-9) {
             helper.fail("the Net rate is " + read + "/min, not " + perMinute);
         }

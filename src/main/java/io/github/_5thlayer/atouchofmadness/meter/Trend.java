@@ -14,23 +14,22 @@ import io.github._5thlayer.atouchofmadness.sanity.Sanity;
  */
 public final class Trend {
 
-    private static final int TICKS_PER_MINUTE = 20 * 60;
     /** The Sanity a minute at which each band from 1 to 3 begins. */
     private static final double[] BAND_FROM = {0.5, 3, 8};
 
     private Trend() {
     }
 
-    /** The band of a Net rate in Sanity a tick at this Sanity; 0 for one that is not a number. */
-    public static int band(Sanity sanity, double netRatePerTick) {
-        if (netRatePerTick > 0 && sanity.value() >= Sanity.MAX || netRatePerTick < 0 && sanity.value() <= Sanity.MIN) {
+    /** The band of a Net rate in Sanity a minute at this Sanity; 0 for one that is not a number. */
+    public static int band(Sanity sanity, double netRate) {
+        if (netRate > 0 && sanity.value() >= Sanity.MAX || netRate < 0 && sanity.value() <= Sanity.MIN) {
             return 0;
         }
-        double perMinute = Math.abs(netRatePerTick) * TICKS_PER_MINUTE;
+        double speed = Math.abs(netRate);
         int band = 0;
-        while (band < BAND_FROM.length && perMinute >= BAND_FROM[band]) {
+        while (band < BAND_FROM.length && speed >= BAND_FROM[band]) {
             band++;
         }
-        return netRatePerTick < 0 ? -band : band;
+        return netRate < 0 ? -band : band;
     }
 }

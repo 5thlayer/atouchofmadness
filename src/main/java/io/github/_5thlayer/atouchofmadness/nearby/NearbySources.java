@@ -10,7 +10,6 @@ import java.util.function.ToDoubleBiFunction;
 import com.mojang.serialization.Codec;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
-import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Rate;
@@ -63,8 +62,8 @@ public final class NearbySources {
         modBus.addListener(RegisterDataMapTypesEvent.class, event -> event.register(UNSETTLING_WEIGHT));
         modBus.addListener(ModConfigEvent.Loading.class, NearbySources::configChanged);
         modBus.addListener(ModConfigEvent.Reloading.class, NearbySources::configChanged);
-        PlayerSanity.addSource(player -> Rate.of(hostile(player), Cause.HOSTILE));
-        PlayerSanity.addSource(player -> Rate.of(company(player), Cause.COMPANY));
+        PlayerSanity.addSource(player -> Rate.drain(hostile(player), Cause.HOSTILE));
+        PlayerSanity.addSource(player -> Rate.restore(company(player), Cause.COMPANY));
     }
 
     private static double hostile(ServerPlayer player) {
@@ -72,7 +71,7 @@ public final class NearbySources {
     }
 
     /**
-     * The drain, in Sanity a tick, of the living entities in {@link #UNSETTLING} within the hostile radius
+     * The drain, in Sanity a minute, of the living entities in {@link #UNSETTLING} within the hostile radius
      * of the player that {@code which} accepts, each by what {@code weigh} makes of its
      * {@link #UNSETTLING_WEIGHT}, the sum capped as the hostile drain's is.
      */
@@ -81,13 +80,13 @@ public final class NearbySources {
         var weights = near(player, current.hostileRadius(), entity -> entity.typeHolder().is(UNSETTLING) && which.test(entity)).stream()
                 .map(entity -> weigh.applyAsDouble(entity, weight(entity)))
                 .toList();
-        return EnvironmentRules.drainPerTick(current.hostileDrain(weights));
+        return current.hostileDrain(weights);
     }
 
     private static double company(ServerPlayer player) {
         var current = rules;
         boolean anyCompany = !near(player, current.companyRadius(), NearbySources::isCompany).isEmpty();
-        return -EnvironmentRules.drainPerTick(current.companyRestore(anyCompany));
+        return current.companyRestore(anyCompany);
     }
 
     /**

@@ -12,7 +12,6 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
 import io.github._5thlayer.atouchofmadness.discovery.Discovery;
-import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Rate;
@@ -120,9 +119,9 @@ public final class MusicSource {
         }
         var heard = hear(player, jukebox, disc.get());
         player.setData(HISTORY, heard.history());
-        double perTick = -EnvironmentRules.drainPerTick(current.restore(heard.factor()));
+        double perMinute = current.restore(heard.factor());
         // A Stale disc's play is music too.
-        return heard.factor() < 1 ? Rate.of(perTick, Cause.MUSIC, Cause.STALE_DISC) : Rate.of(perTick, Cause.MUSIC);
+        return heard.factor() < 1 ? Rate.restore(perMinute, Cause.MUSIC, Cause.STALE_DISC) : Rate.restore(perMinute, Cause.MUSIC);
     }
 
     /**

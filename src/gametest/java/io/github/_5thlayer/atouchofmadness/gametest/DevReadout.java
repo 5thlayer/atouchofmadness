@@ -23,7 +23,6 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 final class DevReadout {
 
     private static final boolean CLIENT_RUN = System.getProperty("libworks.run", "").equals("client");
-    private static final int TICKS_PER_MINUTE = 20 * 60;
 
     private DevReadout() {
     }
@@ -35,7 +34,7 @@ final class DevReadout {
             return;
         }
         String text = String.format(Locale.ROOT, "Sanity %.1f (%s) · %+.1f/min", PlayerSanity.get(player).value(),
-                PlayerSanity.stage(player).name().toLowerCase(Locale.ROOT), PlayerSanity.netRate(player) * TICKS_PER_MINUTE);
+                PlayerSanity.stage(player).name().toLowerCase(Locale.ROOT), PlayerSanity.netRate(player));
         player.sendSystemMessage(Component.literal(text), true);
     }
 }

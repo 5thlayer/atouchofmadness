@@ -19,10 +19,6 @@ class TrendTest {
 
     private static final Sanity MID = new Sanity(50);
 
-    private static double perTick(double perMinute) {
-        return perMinute / (20 * 60);
-    }
-
     @ParameterizedTest(name = "{0}/min is band {1}")
     @CsvSource({
             "0, 0",
@@ -42,13 +38,13 @@ class TrendTest {
             "100, 3"
     })
     void aNetRateFallsInItsBand(double perMinute, int band) {
-        assertEquals(band, Trend.band(MID, perTick(perMinute)));
+        assertEquals(band, Trend.band(MID, perMinute));
     }
 
     @Test
     void theBandIsSymmetric() {
         for (double perMinute = 0; perMinute < 12; perMinute += 0.25) {
-            assertEquals(-Trend.band(MID, perTick(perMinute)), Trend.band(MID, perTick(-perMinute)), perMinute + "/min");
+            assertEquals(-Trend.band(MID, perMinute), Trend.band(MID, -perMinute), perMinute + "/min");
         }
     }
 
@@ -59,23 +55,23 @@ class TrendTest {
 
     @Test
     void aRestoreAtFullShowsNoTrend() {
-        assertEquals(0, Trend.band(new Sanity(Sanity.MAX), perTick(4)));
+        assertEquals(0, Trend.band(new Sanity(Sanity.MAX), 4));
     }
 
     @Test
     void aDrainAtEmptyShowsNoTrend() {
-        assertEquals(0, Trend.band(new Sanity(Sanity.MIN), perTick(-6)));
+        assertEquals(0, Trend.band(new Sanity(Sanity.MIN), -6));
     }
 
     @Test
     void aDrainAtFullAndARestoreAtEmptyStillShow() {
-        assertEquals(-2, Trend.band(new Sanity(Sanity.MAX), perTick(-6)));
-        assertEquals(2, Trend.band(new Sanity(Sanity.MIN), perTick(4)));
+        assertEquals(-2, Trend.band(new Sanity(Sanity.MAX), -6));
+        assertEquals(2, Trend.band(new Sanity(Sanity.MIN), 4));
     }
 
     @Test
     void justShortOfAnEndStillShows() {
-        assertEquals(2, Trend.band(new Sanity(99.99), perTick(4)));
-        assertEquals(-2, Trend.band(new Sanity(0.01), perTick(-6)));
+        assertEquals(2, Trend.band(new Sanity(99.99), 4));
+        assertEquals(-2, Trend.band(new Sanity(0.01), -6));
     }
 }

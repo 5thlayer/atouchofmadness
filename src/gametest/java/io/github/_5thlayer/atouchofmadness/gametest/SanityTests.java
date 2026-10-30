@@ -62,7 +62,7 @@ final class SanityTests {
                 }
             }
         });
-        PlayerSanity.addSource(player -> Rate.of(RATES.getOrDefault(player.getUUID(), 0.0)));
+        PlayerSanity.addSource(player -> new Rate(RATES.getOrDefault(player.getUUID(), 0.0), Set.of()));
     }
 
     private SanityTests() {
@@ -180,7 +180,7 @@ final class SanityTests {
     }
 
     /**
-     * A drain of 0.05 a tick takes 1 at each of the player's evaluations, which come 20 ticks apart
+     * A drain of 60 a minute takes 1 at each of the player's evaluations, which come 20 ticks apart
      * with Sanity still between them. The test ticks the player itself. After a relog the Net rate is
      * 0 again, since it is never saved.
      */
@@ -191,7 +191,7 @@ final class SanityTests {
             leave(helper, profile);
         });
         TestPlayers.join(helper, profile);
-        RATES.put(profile.id(), -0.05);
+        RATES.put(profile.id(), -60.0);
         long[] firstEvaluation = {-1};
         helper.onEachTick(() -> {
             var player = TestPlayers.playerList(helper).getPlayer(profile.id());
@@ -200,9 +200,9 @@ final class SanityTests {
             long tick = helper.getTick();
             if (firstEvaluation[0] < 0) {
                 if (value != 100) {
-                    if (value != 99 || PlayerSanity.netRate(player) != -0.05) {
+                    if (value != 99 || PlayerSanity.netRate(player) != -60) {
                         helper.fail("the first evaluation left Sanity " + value + " and a Net rate of "
-                                + PlayerSanity.netRate(player) + ", not 99 and -0.05");
+                                + PlayerSanity.netRate(player) + ", not 99 and -60");
                     }
                     firstEvaluation[0] = tick;
                 }

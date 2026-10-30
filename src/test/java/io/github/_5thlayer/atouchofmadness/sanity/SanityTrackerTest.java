@@ -34,21 +34,21 @@ class SanityTrackerTest {
     @Test
     void anEvaluationMovesSanityByTheSumOfItsRatesForEachTick() {
         var tracker = new SanityTracker();
-        assertEquals(55, tracker.evaluate(new Sanity(60), rates(-0.5, 0.25), 20).value());
-        assertEquals(-0.25, tracker.netRate());
+        assertEquals(55, tracker.evaluate(new Sanity(60), rates(-600, 300), 20).value());
+        assertEquals(-300, tracker.netRate());
     }
 
     @Test
     void anEvaluationIsHeldToTheRange() {
         var tracker = new SanityTracker();
-        assertEquals(0, tracker.evaluate(new Sanity(5), rates(-1), 20).value());
-        assertEquals(100, tracker.evaluate(new Sanity(95), rates(1), 20).value());
+        assertEquals(0, tracker.evaluate(new Sanity(5), rates(-1200), 20).value());
+        assertEquals(100, tracker.evaluate(new Sanity(95), rates(1200), 20).value());
     }
 
     @Test
     void anEvaluationWithNoRatesLeavesSanityAndANetRateOfZero() {
         var tracker = new SanityTracker();
-        tracker.evaluate(new Sanity(60), rates(-1), 20);
+        tracker.evaluate(new Sanity(60), rates(-1200), 20);
         assertEquals(60, tracker.evaluate(new Sanity(60), rates(), 20).value());
         assertEquals(0, tracker.netRate());
     }
@@ -94,35 +94,35 @@ class SanityTrackerTest {
     @Test
     void aDrainAboveEmptyAndARestoreBelowFullMoveSanity() {
         assertEquals(Set.of(LOW_LIGHT, COMPANY), SanityTracker.moving(new Sanity(50),
-                new Rate[] {Rate.of(-0.1, LOW_LIGHT), Rate.of(0.1, COMPANY)}));
+                new Rate[] {Rate.drain(6, LOW_LIGHT), Rate.restore(6, COMPANY)}));
     }
 
     @Test
     void aRestoreAtFullMovesNothingEvenWhileADrainMovesSanity() {
         assertEquals(Set.of(LOW_LIGHT), SanityTracker.moving(new Sanity(100),
-                new Rate[] {Rate.of(-0.1, LOW_LIGHT), Rate.of(0.5, COMPANY)}));
+                new Rate[] {Rate.drain(6, LOW_LIGHT), Rate.restore(30, COMPANY)}));
     }
 
     @Test
     void aDrainAtEmptyMovesNothingEvenWhileARestoreMovesSanity() {
         assertEquals(Set.of(COMPANY), SanityTracker.moving(new Sanity(0),
-                new Rate[] {Rate.of(-0.5, LOW_LIGHT), Rate.of(0.1, COMPANY)}));
+                new Rate[] {Rate.drain(30, LOW_LIGHT), Rate.restore(6, COMPANY)}));
     }
 
     @Test
     void aRateOfZeroMovesNothing() {
-        assertEquals(Set.of(), SanityTracker.moving(new Sanity(50), new Rate[] {Rate.of(0, LOW_LIGHT)}));
+        assertEquals(Set.of(), SanityTracker.moving(new Sanity(50), new Rate[] {Rate.drain(0, LOW_LIGHT)}));
     }
 
     @Test
     void aRateNamesEachOfItsCauses() {
-        assertEquals(Set.of(MUSIC, STALE_DISC), SanityTracker.moving(new Sanity(50), new Rate[] {Rate.of(0.05, MUSIC, STALE_DISC)}));
+        assertEquals(Set.of(MUSIC, STALE_DISC), SanityTracker.moving(new Sanity(50), new Rate[] {Rate.restore(3, MUSIC, STALE_DISC)}));
     }
 
-    private static Rate[] rates(double... perTick) {
-        var rates = new Rate[perTick.length];
-        for (int i = 0; i < perTick.length; i++) {
-            rates[i] = Rate.of(perTick[i]);
+    private static Rate[] rates(double... perMinute) {
+        var rates = new Rate[perMinute.length];
+        for (int i = 0; i < perMinute.length; i++) {
+            rates[i] = new Rate(perMinute[i], Set.of());
         }
         return rates;
     }

@@ -10,7 +10,6 @@ import java.util.function.Consumer;
 
 import com.mojang.authlib.GameProfile;
 import io.github._5thlayer.atouchofmadness.discovery.Discovery;
-import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Sanity;
@@ -54,9 +53,6 @@ final class UmbraGearTests {
     private static final int PADDING = 9;
 
     private static final BlockPos FEET = new BlockPos(1, 1, 4);
-
-    /** A restore of 1 a minute, as a rate in Sanity a tick. */
-    private static final double PER_MINUTE = -EnvironmentRules.drainPerTick(1);
 
     /** Each piece's recipe, as vanilla shapes its netherite or diamond one: U for Umbra, S for a stick. */
     private static final Map<Item, List<String>> RECIPES = Map.of(
@@ -219,7 +215,7 @@ final class UmbraGearTests {
             if (helper.getTick() < READ_AT) {
                 return;
             }
-            double read = -PlayerSanity.netRate(player) / PER_MINUTE;
+            double read = -PlayerSanity.netRate(player);
             if (Math.abs(read - perMinute) > 1e-9) {
                 helper.fail("the Net rate drains " + read + "/min, not " + perMinute);
             }

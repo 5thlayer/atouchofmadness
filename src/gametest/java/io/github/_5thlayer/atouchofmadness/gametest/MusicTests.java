@@ -9,7 +9,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import com.mojang.authlib.GameProfile;
-import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -49,9 +48,6 @@ final class MusicTests {
     /** A jukebox 2 blocks from the player, and one 6 blocks away. */
     private static final BlockPos NEAR = new BlockPos(3, 1, 4);
     private static final BlockPos FAR = new BlockPos(7, 1, 4);
-
-    /** A restore of 1 a minute, as a rate in Sanity a tick. */
-    private static final double PER_MINUTE = -EnvironmentRules.drainPerTick(1);
 
     private MusicTests() {
     }
@@ -169,7 +165,7 @@ final class MusicTests {
                 }
                 player.doTick();
                 if (tick % STEP == STEP - 1 && step.perMinute() != null) {
-                    double read = PlayerSanity.netRate(player) / PER_MINUTE;
+                    double read = PlayerSanity.netRate(player);
                     if (Math.abs(read - step.perMinute()) > 1e-9) {
                         helper.fail("after step " + (index + 1) + " the Net rate is " + read + "/min, not " + step.perMinute());
                     }

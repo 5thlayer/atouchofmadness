@@ -16,7 +16,6 @@ import io.github._5thlayer.atouchof.signal.Strike;
 import io.github._5thlayer.atouchofmadness.crown.FlowerCrown;
 import io.github._5thlayer.atouchofmadness.discovery.Discoverables;
 import io.github._5thlayer.atouchofmadness.discovery.Discovery;
-import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Sanity;
@@ -62,9 +61,6 @@ final class DiscoveryTests {
 
     /** Wider than the company radius. */
     private static final int PADDING = 9;
-
-    /** A restore of 1 a minute, as a rate in Sanity a tick. */
-    private static final double PER_MINUTE = -EnvironmentRules.drainPerTick(1);
 
     static {
         Discovery.onTell((player, known) -> TOLD.put(player.getUUID(), known));
@@ -375,7 +371,7 @@ final class DiscoveryTests {
     }
 
     private static void expectNetRate(GameTestHelper helper, ServerPlayer player, double perMinute) {
-        double read = PlayerSanity.netRate(player) / PER_MINUTE;
+        double read = PlayerSanity.netRate(player);
         if (Math.abs(read - perMinute) > 1e-9) {
             helper.fail("the Net rate is " + read + "/min, not " + perMinute + ": the fixture tests nothing");
         }

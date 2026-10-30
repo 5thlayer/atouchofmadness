@@ -13,25 +13,27 @@ import java.util.Set;
  */
 final class SanityTracker {
 
+    private static final int TICKS_PER_MINUTE = 20 * 60;
+
     private double netRate;
     private Optional<Stage> reported = Optional.empty();
 
-    /** The Net rate of the last evaluation, in Sanity a tick; 0 before the first. */
+    /** The Net rate of the last evaluation, in Sanity a minute; 0 before the first. */
     double netRate() {
         return netRate;
     }
 
     /**
      * Sums the rates of the continuous drains (negative) and restores (positive) that apply into the
-     * Net rate, and returns Sanity moved by it for each of the ticks the evaluation covers.
+     * Net rate, and returns Sanity moved by it, a rate a minute, for the ticks the evaluation covers.
      */
     Sanity evaluate(Sanity sanity, Rate[] rates, int ticks) {
         double sum = 0;
         for (var rate : rates) {
-            sum += rate.perTick();
+            sum += rate.perMinute();
         }
         netRate = sum;
-        return sanity.add(sum * ticks);
+        return sanity.add(sum * ticks / TICKS_PER_MINUTE);
     }
 
     /**
@@ -41,7 +43,7 @@ final class SanityTracker {
     static Set<Cause> moving(Sanity sanity, Rate[] rates) {
         var moving = EnumSet.noneOf(Cause.class);
         for (var rate : rates) {
-            if (rate.perTick() < 0 && sanity.value() > Sanity.MIN || rate.perTick() > 0 && sanity.value() < Sanity.MAX) {
+            if (rate.perMinute() < 0 && sanity.value() > Sanity.MIN || rate.perMinute() > 0 && sanity.value() < Sanity.MAX) {
                 moving.addAll(rate.causes());
             }
         }

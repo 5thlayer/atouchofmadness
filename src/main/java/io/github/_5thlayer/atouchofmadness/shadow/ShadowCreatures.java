@@ -75,7 +75,7 @@ public final class ShadowCreatures {
         modBus.addListener(EntityAttributeCreationEvent.class, ShadowCreatures::attributes);
         modBus.addListener(ModConfigEvent.Loading.class, ShadowCreatures::configChanged);
         modBus.addListener(ModConfigEvent.Reloading.class, ShadowCreatures::configChanged);
-        PlayerSanity.addSource(player -> Rate.of(nearby(player), Cause.SHADOW_CREATURE));
+        PlayerSanity.addSource(player -> Rate.drain(nearby(player), Cause.SHADOW_CREATURE));
         PlayerSanity.onStageChange(ShadowCreatures::retrack);
         Shapes.register(modBus);
         ShadowSpawner.register();

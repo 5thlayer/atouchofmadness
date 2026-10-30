@@ -49,10 +49,4 @@ class EnvironmentRulesTest {
         assertEquals(1.5, RULES.wet());
         assertEquals(1, RULES.unsettling());
     }
-
-    @Test
-    void aDrainPerMinuteIsANegativeRatePerTick() {
-        assertEquals(-6.0 / 1200, EnvironmentRules.drainPerTick(6));
-        assertEquals(0, EnvironmentRules.drainPerTick(0), 0);
-    }
 }

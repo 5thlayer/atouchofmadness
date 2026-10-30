@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.function.IntPredicate;
 
 import io.github._5thlayer.atouchofmadness.environment.EnvironmentDrains;
-import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -165,7 +164,7 @@ final class EnvironmentTests {
             if (litOn[0] < 0 || helper.getTick() < Math.max(READ_AT, litOn[0] + PlayerSanity.EVALUATION_TICKS + 1)) {
                 return;
             }
-            double read = PlayerSanity.netRate(player) / EnvironmentRules.drainPerTick(1);
+            double read = -PlayerSanity.netRate(player);
             if (Math.abs(read - perMinute) > 1e-9) {
                 helper.fail("the Net rate is a drain of " + read + "/min, not " + perMinute);
             }

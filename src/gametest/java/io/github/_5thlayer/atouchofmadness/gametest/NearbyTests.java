@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.function.BiConsumer;
 
 import com.mojang.authlib.GameProfile;
-import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -38,9 +37,6 @@ final class NearbyTests {
 
     /** Where the player stands: on the platform's west edge, so a mob can be placed up to 7 blocks east. */
     private static final BlockPos FEET = new BlockPos(1, 1, 4);
-
-    /** A restore of 1 a minute, as a rate in Sanity a tick. */
-    private static final double PER_MINUTE = -EnvironmentRules.drainPerTick(1);
 
     private NearbyTests() {
     }
@@ -137,7 +133,7 @@ final class NearbyTests {
                     helper.fail(mob.getType().toShortString() + " died before the Net rate was read");
                 }
             }
-            double read = PlayerSanity.netRate(player) / PER_MINUTE;
+            double read = PlayerSanity.netRate(player);
             if (Math.abs(read - perMinute) > 1e-9) {
                 helper.fail("the Net rate is " + read + "/min, not " + perMinute);
             }

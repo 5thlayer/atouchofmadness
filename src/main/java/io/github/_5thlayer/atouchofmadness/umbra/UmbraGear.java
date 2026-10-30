@@ -7,7 +7,6 @@ import java.util.List;
 
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
-import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Rate;
@@ -90,7 +89,7 @@ public final class UmbraGear {
         ITEMS.register(modBus);
         modBus.addListener(ModConfigEvent.Loading.class, UmbraGear::configChanged);
         modBus.addListener(ModConfigEvent.Reloading.class, UmbraGear::configChanged);
-        PlayerSanity.addSource(player -> Rate.of(inUse(player), Cause.UMBRA_GEAR));
+        PlayerSanity.addSource(player -> Rate.drain(inUse(player), Cause.UMBRA_GEAR));
     }
 
     private static DeferredItem<Item> armour(String name, ArmorType type) {
@@ -101,7 +100,7 @@ public final class UmbraGear {
                 .attributes(ARMOUR.createAttributes(type).withModifierAdded(Attributes.MOVEMENT_SPEED, speed, slots)));
     }
 
-    /** The drain of the player's Umbra Gear in use, in Sanity a tick. */
+    /** The drain of the player's Umbra Gear in use, in Sanity a minute. */
     private static double inUse(ServerPlayer player) {
         int swords = 0;
         int pickaxes = 0;
@@ -117,7 +116,7 @@ public final class UmbraGear {
                 armour += ARMOUR_PIECES.stream().anyMatch(worn::is) ? 1 : 0;
             }
         }
-        return EnvironmentRules.drainPerTick(rules.drain(swords, pickaxes, armour));
+        return rules.drain(swords, pickaxes, armour);
     }
 
     private static void configChanged(ModConfigEvent event) {

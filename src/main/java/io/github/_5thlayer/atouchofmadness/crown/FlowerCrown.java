@@ -5,7 +5,6 @@ package io.github._5thlayer.atouchofmadness.crown;
 
 import io.github._5thlayer.atouchofmadness.ATouchOfMadness;
 import io.github._5thlayer.atouchofmadness.MadnessConfig;
-import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.Cause;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import io.github._5thlayer.atouchofmadness.sanity.Rate;
@@ -55,7 +54,7 @@ public final class FlowerCrown {
         ITEMS.register(modBus);
         modBus.addListener(ModConfigEvent.Loading.class, FlowerCrown::configChanged);
         modBus.addListener(ModConfigEvent.Reloading.class, FlowerCrown::configChanged);
-        PlayerSanity.addSource(player -> Rate.of(worn(player), Cause.FLOWER_CROWN));
+        PlayerSanity.addSource(player -> Rate.restore(worn(player), Cause.FLOWER_CROWN));
         NeoForge.EVENT_BUS.addListener(AnvilUpdateEvent.class, FlowerCrown::anvil);
     }
 
@@ -76,7 +75,7 @@ public final class FlowerCrown {
             stack.setDamageValue(wear);
         }
         stack.hurtAndBreak(PlayerSanity.EVALUATION_TICKS, player, EquipmentSlot.HEAD);
-        return -EnvironmentRules.drainPerTick(current.restore());
+        return current.restore();
     }
 
     /**

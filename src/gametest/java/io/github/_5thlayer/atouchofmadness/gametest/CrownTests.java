@@ -10,7 +10,6 @@ import java.util.function.Consumer;
 import com.mojang.authlib.GameProfile;
 import io.github._5thlayer.atouchofmadness.crown.CrownRules;
 import io.github._5thlayer.atouchofmadness.crown.FlowerCrown;
-import io.github._5thlayer.atouchofmadness.environment.EnvironmentRules;
 import io.github._5thlayer.atouchofmadness.sanity.PlayerSanity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -45,9 +44,6 @@ final class CrownTests {
     private static final int PADDING = 9;
 
     private static final BlockPos FEET = new BlockPos(1, 1, 4);
-
-    /** A restore of 1 a minute, as a rate in Sanity a tick. */
-    private static final double PER_MINUTE = -EnvironmentRules.drainPerTick(1);
 
     /** The wear of a crown that has been worn a while, but is far from spent. */
     private static final int WORN = 100;
@@ -200,7 +196,7 @@ final class CrownTests {
             if (helper.getTick() < READ_AT) {
                 return;
             }
-            double read = PlayerSanity.netRate(player) / PER_MINUTE;
+            double read = PlayerSanity.netRate(player);
             if (Math.abs(read - perMinute) > 1e-9) {
                 helper.fail("the Net rate is " + read + "/min, not " + perMinute);
             }
@@ -216,7 +212,7 @@ final class CrownTests {
                 return;
             }
             if (PlayerSanity.netRate(player) != 0) {
-                helper.fail("the Net rate is " + PlayerSanity.netRate(player) / PER_MINUTE + "/min, not 0");
+                helper.fail("the Net rate is " + PlayerSanity.netRate(player) + "/min, not 0");
             }
             if (crown.getDamageValue() != WORN) {
                 helper.fail("the crown went from " + WORN + " wear to " + crown.getDamageValue());

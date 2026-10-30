@@ -135,7 +135,7 @@ public final class PlayerSanity {
         return rules.stageOf(get(player));
     }
 
-    /** The Net rate of the player's last evaluation, in Sanity a tick: 0 when nothing applied, or before the first since they joined. */
+    /** The Net rate of the player's last evaluation, in Sanity a minute: 0 when nothing applied, or before the first since they joined. */
     public static double netRate(ServerPlayer player) {
         var tracker = TRACKERS.get(player.getUUID());
         return tracker == null ? 0 : tracker.netRate();

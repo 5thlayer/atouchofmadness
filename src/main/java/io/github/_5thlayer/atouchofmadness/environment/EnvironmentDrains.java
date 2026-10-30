@@ -67,7 +67,7 @@ public final class EnvironmentDrains {
     }
 
     private static Rate drainIf(boolean applies, double perMinute, Cause cause) {
-        return applies ? Rate.of(EnvironmentRules.drainPerTick(perMinute), cause) : Rate.NONE;
+        return applies ? Rate.drain(perMinute, cause) : Rate.NONE;
     }
 
     private static void configChanged(ModConfigEvent event) {
