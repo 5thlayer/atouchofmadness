@@ -25,7 +25,7 @@ final class SanityTracker {
 
     /**
      * Sums the rates of the continuous drains (negative) and restores (positive) that apply into the
-     * Net rate, and returns Sanity moved by it, a rate a minute, for the ticks the evaluation covers.
+     * Net rate, and returns Sanity moved by it over the ticks the evaluation covers.
      */
     Sanity evaluate(Sanity sanity, Rate[] rates, int ticks) {
         double sum = 0;

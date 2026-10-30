@@ -25,9 +25,9 @@ public final class Trend {
         if (netRate > 0 && sanity.value() >= Sanity.MAX || netRate < 0 && sanity.value() <= Sanity.MIN) {
             return 0;
         }
-        double speed = Math.abs(netRate);
+        double perMinute = Math.abs(netRate);
         int band = 0;
-        while (band < BAND_FROM.length && speed >= BAND_FROM[band]) {
+        while (band < BAND_FROM.length && perMinute >= BAND_FROM[band]) {
             band++;
         }
         return netRate < 0 ? -band : band;

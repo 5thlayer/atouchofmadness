@@ -32,7 +32,7 @@ class SanityTrackerTest {
     }
 
     @Test
-    void anEvaluationMovesSanityByTheSumOfItsRatesForEachTick() {
+    void anEvaluationMovesSanityByTheSumOfItsRatesOverItsTicks() {
         var tracker = new SanityTracker();
         assertEquals(55, tracker.evaluate(new Sanity(60), rates(-600, 300), 20).value());
         assertEquals(-300, tracker.netRate());

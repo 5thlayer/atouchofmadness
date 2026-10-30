@@ -265,7 +265,7 @@ public final class MadnessConfig {
         return live;
     }
 
-    /** Adds a listener that hears of every load and reload of the config, once each {@link #live} rules have been read anew. */
+    /** Adds a listener that hears of every load and reload of the config, once all {@link #live} rules are read anew. */
     public static void onReload(Runnable listener) {
         RELOAD_LISTENERS.add(listener);
     }
