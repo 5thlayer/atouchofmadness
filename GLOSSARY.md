@@ -100,8 +100,12 @@ _Avoid_: tendrils, shadows, shades (taken by Shadow Creatures)
 
 ### Shadow Creatures
 
+**Haunted**:
+Said of a player who may have Shadow Creatures: Uneasy or Insane, in Survival or Adventure, alive and awake, in a dimension that allows them. Their Sanity sets how many; once they stop being Haunted, theirs vanish at once.
+_Avoid_: eligible, targeted, cursed
+
 **Owner**:
-The one player a Shadow Creature exists for and hunts; besides the Owner, only a player who is Insane can see it.
+The one Haunted player a Shadow Creature exists for and hunts; besides the Owner, only a player who is Insane can see it.
 
 **Unreal**:
 The state of a Shadow Creature whose Owner is Uneasy: it can neither harm nor be harmed, and fades when approached or struck.
