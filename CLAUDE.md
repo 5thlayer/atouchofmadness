@@ -1,6 +1,6 @@
 # A Touch of Madness
 
-The second Pillar of A Touch Of (`5thlayer/atouchof`, the suite's home): a mod that owns one survival danger, Sanity, and plays alone in vanilla. See `GLOSSARY.md` for this Pillar's glossary, and the suite's `GLOSSARY.md` for the terms the Pillars share.
+The second Pillar of A Touch Of (whose glossary and ADRs are in the private Home Repo, `~/5thlayer/home/atouchof/`): a mod that owns one survival danger, Sanity, and plays alone in vanilla. See `GLOSSARY.md` for this Pillar's glossary, and the suite's `~/5thlayer/home/atouchof/GLOSSARY.md` for the terms the Pillars share.
 
 ## Workflow
 
