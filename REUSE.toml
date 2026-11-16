@@ -41,13 +41,6 @@ path = [
 SPDX-FileCopyrightText = "2026 5thlayer"
 SPDX-License-Identifier = "CC-BY-4.0"
 
-# The agent skills, from mattpocock/skills.
-[[annotations]]
-path = [".claude/skills/**", ".gitmodules"]
-precedence = "override"
-SPDX-FileCopyrightText = "Matt Pocock"
-SPDX-License-Identifier = "MIT"
-
 # Malcolm Riley's unused textures (https://github.com/malcolmriley/unused-textures), credited in NOTICE.
 # The unmodified copies under data/art/ are his; a texture scripts/build-textures.py builds from them is
 # both his and ours, as are the cover and icon publish/make-cover.py draws them onto. Module CI runs
